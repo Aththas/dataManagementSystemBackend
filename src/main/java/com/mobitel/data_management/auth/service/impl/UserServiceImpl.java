@@ -3,8 +3,11 @@ package com.mobitel.data_management.auth.service.impl;
 import com.mobitel.data_management.auth.dto.requestDto.AddUserDto;
 import com.mobitel.data_management.auth.dto.requestDto.AuthDto;
 import com.mobitel.data_management.auth.dto.responseDto.ResponseDto;
+import com.mobitel.data_management.auth.entity.token.Token;
+import com.mobitel.data_management.auth.entity.token.TokenType;
 import com.mobitel.data_management.auth.entity.user.Role;
 import com.mobitel.data_management.auth.entity.user.User;
+import com.mobitel.data_management.auth.repository.TokenRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.UserService;
 import com.mobitel.data_management.config.JwtService;
@@ -32,6 +35,7 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final TokenRepository tokenRepository;
 
     @Value("${spring.application.security.user.password}")
     private String password;
@@ -67,6 +71,7 @@ public class UserServiceImpl implements UserService {
             User user = optionalUser.get();
             final String accessToken = jwtService.generateToken(user);
             final String refreshToken = jwtService.generateRefreshToken(user);
+            saveToken(accessToken ,user);
 
             ResponseDto responseDto = new ResponseDto();
             responseDto.setAccessToken(accessToken);
@@ -91,6 +96,7 @@ public class UserServiceImpl implements UserService {
             if(jwtService.isTokenValid(jwt,user)){
 
                 final String accessToken = jwtService.generateRefreshToken(user);
+                saveToken(accessToken ,user);
 
                 ResponseDto responseDto = new ResponseDto();
                 responseDto.setAccessToken(accessToken);
@@ -101,5 +107,14 @@ public class UserServiceImpl implements UserService {
             return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
         }
         return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
+    }
+
+    private void saveToken(String accessToken, User user) {
+        Token token = new Token();
+        token.setAccessToken(accessToken);
+        token.setTokenType(TokenType.BEARER);
+        token.setRevoked(false);
+        token.setUser(user);
+        tokenRepository.save(token);
     }
 }
