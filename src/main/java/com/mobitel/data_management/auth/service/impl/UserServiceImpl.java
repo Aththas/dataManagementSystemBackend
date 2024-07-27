@@ -3,30 +3,42 @@ package com.mobitel.data_management.auth.service.impl;
 import com.mobitel.data_management.auth.dto.requestDto.AddUserDto;
 import com.mobitel.data_management.auth.dto.requestDto.AuthDto;
 import com.mobitel.data_management.auth.dto.responseDto.ResponseDto;
+import com.mobitel.data_management.auth.entity.token.Token;
+import com.mobitel.data_management.auth.entity.token.TokenType;
 import com.mobitel.data_management.auth.entity.user.Role;
 import com.mobitel.data_management.auth.entity.user.User;
+import com.mobitel.data_management.auth.repository.TokenRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.UserService;
 import com.mobitel.data_management.config.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final TokenRepository tokenRepository;
 
     @Value("${spring.application.security.user.password}")
     private String password;
@@ -61,13 +73,64 @@ public class UserServiceImpl implements UserService {
 
             User user = optionalUser.get();
             final String accessToken = jwtService.generateToken(user);
+            final String refreshToken = jwtService.generateRefreshToken(user);
+            revokeAllValidUserTokens(user.getId());
+            saveToken(accessToken ,user);
 
             ResponseDto responseDto = new ResponseDto();
             responseDto.setAccessToken(accessToken);
+            responseDto.setRefreshToken(refreshToken);
 
             return new ResponseEntity<>(responseDto,HttpStatus.OK);
         }
 
         return new ResponseEntity<>("Authentication Failed", HttpStatus.UNAUTHORIZED);
+    }
+
+    @Override
+    public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
+        final String authHeader = request.getHeader("Authorization");
+        if(authHeader == null || !authHeader.startsWith("Bearer ")){
+            return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
+        }
+        final String jwt = authHeader.substring(7);
+        final String userEmail = jwtService.extractUsername(jwt);
+        if(userEmail != null){
+            User user = userRepository.findByEmail(userEmail).orElseThrow(()-> new UsernameNotFoundException("User Not Found"));
+            if(jwtService.isTokenValid(jwt,user)){
+                final String accessToken = jwtService.generateRefreshToken(user);
+                revokeAllValidUserTokens(user.getId());
+                saveToken(accessToken ,user);
+
+                ResponseDto responseDto = new ResponseDto();
+                responseDto.setAccessToken(accessToken);
+                responseDto.setRefreshToken(jwt);
+
+                return new ResponseEntity<>(responseDto,HttpStatus.OK);
+            }
+            return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
+        }
+        return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
+    }
+
+    private void saveToken(String accessToken, User user) {
+        Token token = new Token();
+        token.setAccessToken(accessToken);
+        token.setTokenType(TokenType.BEARER);
+        token.setRevoked(false);
+        token.setUser(user);
+        tokenRepository.save(token);
+    }
+
+    private void revokeAllValidUserTokens(Integer id) {
+        List<Token> validTokens = tokenRepository.findAllValidTokensByUserId(id);
+
+        if(validTokens.isEmpty())
+            return;
+
+        validTokens.forEach(
+                token -> token.setRevoked(true)
+        );
+        tokenRepository.saveAll(validTokens);
     }
 }

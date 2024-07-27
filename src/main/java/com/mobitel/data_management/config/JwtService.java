@@ -1,10 +1,12 @@
 package com.mobitel.data_management.config;
 
+import com.mobitel.data_management.auth.repository.TokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -16,13 +18,19 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
+
+    private final TokenRepository tokenRepository;
 
     @Value("${spring.application.security.jwt.secret-key}")
     private String secretKey;
 
     @Value("${spring.application.security.jwt.expiration}")
     private Integer accessExpiration;
+
+    @Value("${spring.application.security.jwt.refresh-token.expiration}")
+    private Integer refreshExpiration;
 
     private Key getSignInKey(){
         byte[] keyByte = Decoders.BASE64URL.decode(secretKey);
@@ -46,6 +54,10 @@ public class JwtService {
 
     public String generateToken(UserDetails userDetails){
         return buildToken(new HashMap<>(), userDetails, accessExpiration);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails){
+        return buildToken(new HashMap<>(), userDetails, refreshExpiration);
     }
 
     private Claims extractAllClaims(String token){
@@ -78,5 +90,11 @@ public class JwtService {
 
     private Date extractExpiration(String token) {
         return extractClaim(token,Claims::getExpiration);
+    }
+
+    public boolean isTokenNotRevoked(String token) {
+        return tokenRepository.findByAccessToken(token)
+                .map(t -> !t.isRevoked())
+                .orElse(false);
     }
 }
