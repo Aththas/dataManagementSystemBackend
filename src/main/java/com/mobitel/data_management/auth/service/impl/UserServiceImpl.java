@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,10 +27,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
@@ -71,6 +74,7 @@ public class UserServiceImpl implements UserService {
             User user = optionalUser.get();
             final String accessToken = jwtService.generateToken(user);
             final String refreshToken = jwtService.generateRefreshToken(user);
+            revokeAllValidUserTokens(user.getId());
             saveToken(accessToken ,user);
 
             ResponseDto responseDto = new ResponseDto();
@@ -94,8 +98,8 @@ public class UserServiceImpl implements UserService {
         if(userEmail != null){
             User user = userRepository.findByEmail(userEmail).orElseThrow(()-> new UsernameNotFoundException("User Not Found"));
             if(jwtService.isTokenValid(jwt,user)){
-
                 final String accessToken = jwtService.generateRefreshToken(user);
+                revokeAllValidUserTokens(user.getId());
                 saveToken(accessToken ,user);
 
                 ResponseDto responseDto = new ResponseDto();
@@ -116,5 +120,17 @@ public class UserServiceImpl implements UserService {
         token.setRevoked(false);
         token.setUser(user);
         tokenRepository.save(token);
+    }
+
+    private void revokeAllValidUserTokens(Integer id) {
+        List<Token> validTokens = tokenRepository.findAllValidTokensByUserId(id);
+
+        if(validTokens.isEmpty())
+            return;
+
+        validTokens.forEach(
+                token -> token.setRevoked(true)
+        );
+        tokenRepository.saveAll(validTokens);
     }
 }
