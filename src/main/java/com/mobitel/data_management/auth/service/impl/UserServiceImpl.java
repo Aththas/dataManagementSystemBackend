@@ -2,6 +2,7 @@ package com.mobitel.data_management.auth.service.impl;
 
 import com.mobitel.data_management.auth.dto.requestDto.AddUserDto;
 import com.mobitel.data_management.auth.dto.requestDto.AuthDto;
+import com.mobitel.data_management.auth.dto.requestDto.PasswordResetDto;
 import com.mobitel.data_management.auth.dto.responseDto.ResponseDto;
 import com.mobitel.data_management.auth.entity.token.Token;
 import com.mobitel.data_management.auth.entity.token.TokenType;
@@ -111,6 +112,29 @@ public class UserServiceImpl implements UserService {
             return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
         }
         return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
+    }
+
+    @Override
+    public ResponseEntity<?> passwordReset(PasswordResetDto passwordResetDto) {
+        final String email = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if(optionalUser.isEmpty())
+            return new ResponseEntity<>("Invalid Authentication",HttpStatus.UNAUTHORIZED);
+
+        User user = optionalUser.get();
+
+        if(!passwordEncoder.matches(passwordResetDto.getPassword(), user.getPassword())){
+            return new ResponseEntity<>("Password Verification Error",HttpStatus.BAD_REQUEST);
+        }
+
+        if(!passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmPassword())){
+            return new ResponseEntity<>("Password Confirmation Error",HttpStatus.BAD_REQUEST);
+        }
+
+        user.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
+        userRepository.save(user);
+        return new ResponseEntity<>("Password Updated",HttpStatus.OK);
+
     }
 
     private void saveToken(String accessToken, User user) {
