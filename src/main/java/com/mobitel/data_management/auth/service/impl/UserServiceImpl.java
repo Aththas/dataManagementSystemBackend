@@ -1,8 +1,6 @@
 package com.mobitel.data_management.auth.service.impl;
 
-import com.mobitel.data_management.auth.dto.requestDto.AddUserDto;
-import com.mobitel.data_management.auth.dto.requestDto.AuthDto;
-import com.mobitel.data_management.auth.dto.requestDto.PasswordResetDto;
+import com.mobitel.data_management.auth.dto.requestDto.*;
 import com.mobitel.data_management.auth.dto.responseDto.ResponseDto;
 import com.mobitel.data_management.auth.entity.token.Token;
 import com.mobitel.data_management.auth.entity.token.TokenType;
@@ -12,6 +10,9 @@ import com.mobitel.data_management.auth.repository.TokenRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.UserService;
 import com.mobitel.data_management.config.JwtService;
+import com.mobitel.data_management.emailService.EmailService;
+import com.mobitel.data_management.otpService.OtpStorage;
+import com.mobitel.data_management.otpService.OtpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,6 +40,8 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final TokenRepository tokenRepository;
+    private final EmailService emailService;
+    private final OtpStorage otpStorage;
 
     @Value("${spring.application.security.user.password}")
     private String password;
@@ -134,6 +136,47 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
         userRepository.save(user);
         return new ResponseEntity<>("Password Updated",HttpStatus.OK);
+
+    }
+
+    @Override
+    public ResponseEntity<?> forgotPassword(ForgotPasswordDto forgotPasswordDto) {
+        Optional<User> optionalUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
+        if(optionalUser.isPresent()){
+            String otp = OtpUtil.generateOtp();
+            otpStorage.storeOtp(forgotPasswordDto.getEmail(), otp);
+            emailService.sendEmail(forgotPasswordDto.getEmail(), "Your OTP Code", "Your OTP code is: " + otp);
+            return new ResponseEntity<>("OTP sent to email " + forgotPasswordDto.getEmail(), HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
+    }
+
+    @Override
+    public ResponseEntity<?> verifyOtp(OtpDto otpDto) {
+        final String otp = otpStorage.retrieveOtp(otpDto.getEmail());
+        if(otp != null && otp.equals(otpDto.getOtp())){
+            otpStorage.removeOtp(otpDto.getEmail());
+            return new ResponseEntity<>("OTP Verified", HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Invalid OTP.", HttpStatus.BAD_GATEWAY);
+    }
+
+    @Override
+    public ResponseEntity<?> newPassword(NewPasswordDto newPasswordDto) {
+
+        Optional<User> optionalUser = userRepository.findByEmail(newPasswordDto.getEmail());
+        if(optionalUser.isPresent()) {
+
+            if (!newPasswordDto.getNewPassword().equals(newPasswordDto.getConfirmPassword())) {
+                return new ResponseEntity<>("Password Confirmation Error", HttpStatus.BAD_REQUEST);
+            }
+
+            User user = optionalUser.get();
+            user.setPassword(passwordEncoder.encode(newPasswordDto.getNewPassword()));
+            userRepository.save(user);
+            return new ResponseEntity<>("Password Update Successfully",HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
 
     }
 

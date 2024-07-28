@@ -28,6 +28,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/user/auth").permitAll()
                         .requestMatchers("/api/v1/user/addUser").permitAll()
                         .requestMatchers("/api/v1/user/refresh-token").permitAll()
+                        .requestMatchers("/api/v1/user/forgot-password").permitAll()
+                        .requestMatchers("/api/v1/user/verify-otp").permitAll()
+                        .requestMatchers("/api/v1/user/new-password").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
