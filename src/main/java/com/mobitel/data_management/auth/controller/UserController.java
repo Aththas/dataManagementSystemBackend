@@ -1,8 +1,6 @@
 package com.mobitel.data_management.auth.controller;
 
-import com.mobitel.data_management.auth.dto.requestDto.AddUserDto;
-import com.mobitel.data_management.auth.dto.requestDto.AuthDto;
-import com.mobitel.data_management.auth.dto.requestDto.PasswordResetDto;
+import com.mobitel.data_management.auth.dto.requestDto.*;
 import com.mobitel.data_management.auth.dto.responseDto.ResponseDto;
 import com.mobitel.data_management.auth.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,5 +38,20 @@ public class UserController {
     @PostMapping("/password-reset")
     public ResponseEntity<?> passwordReset(@RequestBody PasswordResetDto passwordResetDto){
         return userService.passwordReset(passwordResetDto);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordDto forgotPasswordDto){
+        return userService.forgotPassword(forgotPasswordDto);
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@RequestBody OtpDto otpDto){
+        return userService.verifyOtp(otpDto);
+    }
+
+    @PostMapping("/new-password")
+    public ResponseEntity<?> newPassword(@RequestBody NewPasswordDto newPasswordDto){
+        return userService.newPassword(newPasswordDto);
     }
 }
