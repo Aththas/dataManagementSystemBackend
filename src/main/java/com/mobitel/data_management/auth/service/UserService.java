@@ -8,6 +8,12 @@ import org.springframework.http.ResponseEntity;
 public interface UserService {
     ResponseEntity<String> addUser(AddUserDto addUserDto);
 
+    ResponseEntity<String> updateUser(Integer id, AddUserDto addUserDto);
+
+    ResponseEntity<?> viewUser(Integer id);
+
+    ResponseEntity<?> viewUsers();
+
     ResponseEntity<?> authentication(AuthDto authDto);
 
     ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response);
