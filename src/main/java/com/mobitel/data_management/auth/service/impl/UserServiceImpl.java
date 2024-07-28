@@ -2,6 +2,7 @@ package com.mobitel.data_management.auth.service.impl;
 
 import com.mobitel.data_management.auth.dto.requestDto.*;
 import com.mobitel.data_management.auth.dto.responseDto.ResponseDto;
+import com.mobitel.data_management.auth.dto.responseDto.ViewUserDto;
 import com.mobitel.data_management.auth.entity.token.Token;
 import com.mobitel.data_management.auth.entity.token.TokenType;
 import com.mobitel.data_management.auth.entity.user.Role;
@@ -11,6 +12,7 @@ import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.UserService;
 import com.mobitel.data_management.config.JwtService;
 import com.mobitel.data_management.emailService.EmailService;
+import com.mobitel.data_management.mapper.UserMapper;
 import com.mobitel.data_management.otpService.OtpStorage;
 import com.mobitel.data_management.otpService.OtpUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final TokenRepository tokenRepository;
     private final EmailService emailService;
     private final OtpStorage otpStorage;
+    private final UserMapper userMapper;
 
     @Value("${spring.application.security.user.password}")
     private String password;
@@ -49,7 +53,7 @@ public class UserServiceImpl implements UserService {
     public ResponseEntity<String> addUser(AddUserDto addUserDto) {
         Optional<User> optionalUser = userRepository.findByEmail(addUserDto.getEmail());
         if(optionalUser.isPresent()){
-            return new ResponseEntity<>("Email already existed",HttpStatus.CONFLICT);
+            return new ResponseEntity<>("Email already existed",HttpStatus.OK);
         }
 
         User user = new User();
@@ -61,6 +65,41 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         return new ResponseEntity<>("User Added Successfully",HttpStatus.CREATED);
+    }
+
+    @Override
+    public ResponseEntity<String> updateUser(Integer id, AddUserDto addUserDto) {
+        Optional<User> optionalUser = userRepository.findById(id);
+        if(optionalUser.isPresent()){
+            User user = optionalUser.get();
+            user.setFirstname(addUserDto.getFirstname());
+            user.setLastname(addUserDto.getLastname());
+            user.setEmail(addUserDto.getEmail());
+            user.setRole(Role.valueOf(addUserDto.getRole()));
+            userRepository.save(user);
+
+            return new ResponseEntity<>("User Updated Successfully",HttpStatus.OK);
+        }
+        return new ResponseEntity<>("User Not Found",HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<?> viewUser(Integer id) {
+        Optional<User> optionalUser = userRepository.findById(id);
+        if(optionalUser.isPresent()){
+            User user = optionalUser.get();
+            return new ResponseEntity<>(userMapper.userViewMapper(user),HttpStatus.OK);
+        }
+        return new ResponseEntity<>("User Not Found",HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<?> viewUsers() {
+        List<User> users = userRepository.findAllByOrderByIdAsc();
+        if(users.isEmpty())
+            return new ResponseEntity<>("User List is Empty",HttpStatus.OK);
+
+        return new ResponseEntity<>(users.stream().map(userMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
     }
 
     @Override
@@ -87,7 +126,7 @@ public class UserServiceImpl implements UserService {
             return new ResponseEntity<>(responseDto,HttpStatus.OK);
         }
 
-        return new ResponseEntity<>("Authentication Failed", HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>("Authentication Failed", HttpStatus.OK);
     }
 
     @Override
@@ -126,11 +165,11 @@ public class UserServiceImpl implements UserService {
         User user = optionalUser.get();
 
         if(!passwordEncoder.matches(passwordResetDto.getPassword(), user.getPassword())){
-            return new ResponseEntity<>("Password Verification Error",HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Password Verification Error",HttpStatus.OK);
         }
 
         if(!passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmPassword())){
-            return new ResponseEntity<>("Password Confirmation Error",HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Password Confirmation Error",HttpStatus.OK);
         }
 
         user.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
@@ -158,7 +197,7 @@ public class UserServiceImpl implements UserService {
             otpStorage.removeOtp(otpDto.getEmail());
             return new ResponseEntity<>("OTP Verified", HttpStatus.OK);
         }
-        return new ResponseEntity<>("Invalid OTP.", HttpStatus.BAD_GATEWAY);
+        return new ResponseEntity<>("Invalid OTP.", HttpStatus.OK);
     }
 
     @Override
@@ -168,7 +207,7 @@ public class UserServiceImpl implements UserService {
         if(optionalUser.isPresent()) {
 
             if (!newPasswordDto.getNewPassword().equals(newPasswordDto.getConfirmPassword())) {
-                return new ResponseEntity<>("Password Confirmation Error", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("Password Confirmation Error", HttpStatus.OK);
             }
 
             User user = optionalUser.get();
