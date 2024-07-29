@@ -1,4 +1,4 @@
-package com.mobitel.data_management.emailService;
+package com.mobitel.data_management.other.emailService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;

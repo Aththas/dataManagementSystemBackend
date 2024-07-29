@@ -2,42 +2,34 @@ package com.mobitel.data_management.auth.service.impl;
 
 import com.mobitel.data_management.auth.dto.requestDto.*;
 import com.mobitel.data_management.auth.dto.responseDto.ResponseDto;
-import com.mobitel.data_management.auth.dto.responseDto.ViewUserDto;
 import com.mobitel.data_management.auth.entity.token.Token;
 import com.mobitel.data_management.auth.entity.token.TokenType;
-import com.mobitel.data_management.auth.entity.user.Role;
 import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.TokenRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
-import com.mobitel.data_management.auth.service.UserService;
+import com.mobitel.data_management.auth.service.AuthService;
 import com.mobitel.data_management.config.JwtService;
-import com.mobitel.data_management.emailService.EmailService;
-import com.mobitel.data_management.mapper.UserMapper;
-import com.mobitel.data_management.otpService.OtpStorage;
-import com.mobitel.data_management.otpService.OtpUtil;
+import com.mobitel.data_management.other.emailService.EmailService;
+import com.mobitel.data_management.other.otpService.OtpStorage;
+import com.mobitel.data_management.other.otpService.OtpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
-public class UserServiceImpl implements UserService {
+public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -45,62 +37,6 @@ public class UserServiceImpl implements UserService {
     private final TokenRepository tokenRepository;
     private final EmailService emailService;
     private final OtpStorage otpStorage;
-    private final UserMapper userMapper;
-
-    @Value("${spring.application.security.user.password}")
-    private String password;
-    @Override
-    public ResponseEntity<String> addUser(AddUserDto addUserDto) {
-        Optional<User> optionalUser = userRepository.findByEmail(addUserDto.getEmail());
-        if(optionalUser.isPresent()){
-            return new ResponseEntity<>("Email already existed",HttpStatus.OK);
-        }
-
-        User user = new User();
-        user.setFirstname(addUserDto.getFirstname());
-        user.setLastname(addUserDto.getLastname());
-        user.setEmail(addUserDto.getEmail());
-        user.setRole(Role.valueOf(addUserDto.getRole()));
-        user.setPassword(passwordEncoder.encode(password));
-        userRepository.save(user);
-
-        return new ResponseEntity<>("User Added Successfully",HttpStatus.CREATED);
-    }
-
-    @Override
-    public ResponseEntity<String> updateUser(Integer id, AddUserDto addUserDto) {
-        Optional<User> optionalUser = userRepository.findById(id);
-        if(optionalUser.isPresent()){
-            User user = optionalUser.get();
-            user.setFirstname(addUserDto.getFirstname());
-            user.setLastname(addUserDto.getLastname());
-            user.setEmail(addUserDto.getEmail());
-            user.setRole(Role.valueOf(addUserDto.getRole()));
-            userRepository.save(user);
-
-            return new ResponseEntity<>("User Updated Successfully",HttpStatus.OK);
-        }
-        return new ResponseEntity<>("User Not Found",HttpStatus.OK);
-    }
-
-    @Override
-    public ResponseEntity<?> viewUser(Integer id) {
-        Optional<User> optionalUser = userRepository.findById(id);
-        if(optionalUser.isPresent()){
-            User user = optionalUser.get();
-            return new ResponseEntity<>(userMapper.userViewMapper(user),HttpStatus.OK);
-        }
-        return new ResponseEntity<>("User Not Found",HttpStatus.OK);
-    }
-
-    @Override
-    public ResponseEntity<?> viewUsers() {
-        List<User> users = userRepository.findAllByOrderByIdAsc();
-        if(users.isEmpty())
-            return new ResponseEntity<>("User List is Empty",HttpStatus.OK);
-
-        return new ResponseEntity<>(users.stream().map(userMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
-    }
 
     @Override
     public ResponseEntity<?> authentication(AuthDto authDto) {
@@ -153,29 +89,6 @@ public class UserServiceImpl implements UserService {
             return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
         }
         return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
-    }
-
-    @Override
-    public ResponseEntity<?> passwordReset(PasswordResetDto passwordResetDto) {
-        final String email = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if(optionalUser.isEmpty())
-            return new ResponseEntity<>("Invalid Authentication",HttpStatus.UNAUTHORIZED);
-
-        User user = optionalUser.get();
-
-        if(!passwordEncoder.matches(passwordResetDto.getPassword(), user.getPassword())){
-            return new ResponseEntity<>("Password Verification Error",HttpStatus.OK);
-        }
-
-        if(!passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmPassword())){
-            return new ResponseEntity<>("Password Confirmation Error",HttpStatus.OK);
-        }
-
-        user.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
-        userRepository.save(user);
-        return new ResponseEntity<>("Password Updated",HttpStatus.OK);
-
     }
 
     @Override

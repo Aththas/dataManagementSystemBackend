@@ -27,14 +27,9 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/user/auth").permitAll()
-                        .requestMatchers("/api/v1/user/addUser").permitAll()
-                        .requestMatchers("/api/v1/user/updateUser").permitAll()
-                        .requestMatchers("/api/v1/user/refresh-token").permitAll()
-                        .requestMatchers("/api/v1/user/forgot-password").permitAll()
-                        .requestMatchers("/api/v1/user/verify-otp").permitAll()
-                        .requestMatchers("/api/v1/user/new-password").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/demo").hasRole(ADMIN.name())
+                        .requestMatchers("/api/v1/user/**").hasRole(ADMIN.name())
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

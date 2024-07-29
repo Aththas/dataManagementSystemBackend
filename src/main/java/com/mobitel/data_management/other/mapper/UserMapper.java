@@ -1,4 +1,4 @@
-package com.mobitel.data_management.mapper;
+package com.mobitel.data_management.other.mapper;
 
 import com.mobitel.data_management.auth.dto.responseDto.ViewUserDto;
 import com.mobitel.data_management.auth.entity.user.User;
