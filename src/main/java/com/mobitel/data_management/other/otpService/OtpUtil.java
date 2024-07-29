@@ -1,4 +1,4 @@
-package com.mobitel.data_management.otpService;
+package com.mobitel.data_management.other.otpService;
 
 import org.springframework.stereotype.Component;
 
