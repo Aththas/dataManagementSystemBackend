@@ -12,10 +12,12 @@ import com.mobitel.data_management.config.JwtService;
 import com.mobitel.data_management.other.emailService.EmailService;
 import com.mobitel.data_management.other.otpService.OtpStorage;
 import com.mobitel.data_management.other.otpService.OtpUtil;
+import com.mobitel.data_management.other.validator.ObjectValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,6 +31,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
@@ -37,32 +40,46 @@ public class AuthServiceImpl implements AuthService {
     private final TokenRepository tokenRepository;
     private final EmailService emailService;
     private final OtpStorage otpStorage;
+    private final ObjectValidator<AuthDto> authenticationValidator;
+    private final ObjectValidator<ForgotPasswordDto> forgotPasswordValidator;
+    private final ObjectValidator<OtpDto> otpValidator;
+    private final ObjectValidator<NewPasswordDto> newPasswordValidator;
 
     @Override
     public ResponseEntity<?> authentication(AuthDto authDto) {
-        Optional<User> optionalUser = userRepository.findByEmail(authDto.getEmail());
-        if(optionalUser.isPresent()){
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            authDto.getEmail(),
-                            authDto.getPassword()
-                    )
-            );
+        authenticationValidator.validate(authDto);
+        if(authDto != null){
+            try{
+                Optional<User> optionalUser = userRepository.findByEmail(authDto.getEmail());
+                if(optionalUser.isPresent()){
+                    authenticationManager.authenticate(
+                            new UsernamePasswordAuthenticationToken(
+                                    authDto.getEmail(),
+                                    authDto.getPassword()
+                            )
+                    );
 
-            User user = optionalUser.get();
-            final String accessToken = jwtService.generateToken(user);
-            final String refreshToken = jwtService.generateRefreshToken(user);
-            revokeAllValidUserTokens(user.getId());
-            saveToken(accessToken ,user);
+                    User user = optionalUser.get();
+                    final String accessToken = jwtService.generateToken(user);
+                    final String refreshToken = jwtService.generateRefreshToken(user);
+                    revokeAllValidUserTokens(user.getId());
+                    saveToken(accessToken ,user);
 
-            ResponseDto responseDto = new ResponseDto();
-            responseDto.setAccessToken(accessToken);
-            responseDto.setRefreshToken(refreshToken);
+                    ResponseDto responseDto = new ResponseDto();
+                    responseDto.setAccessToken(accessToken);
+                    responseDto.setRefreshToken(refreshToken);
 
-            return new ResponseEntity<>(responseDto,HttpStatus.OK);
+                    return new ResponseEntity<>(responseDto,HttpStatus.OK);
+                }
+
+                return new ResponseEntity<>("Authentication Failed", HttpStatus.OK);
+            }catch (Exception e){
+                log.error(e.toString());
+                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
-
-        return new ResponseEntity<>("Authentication Failed", HttpStatus.OK);
     }
 
     @Override
@@ -93,42 +110,71 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ResponseEntity<?> forgotPassword(ForgotPasswordDto forgotPasswordDto) {
-        Optional<User> optionalUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
-        if(optionalUser.isPresent()){
-            String otp = OtpUtil.generateOtp();
-            otpStorage.storeOtp(forgotPasswordDto.getEmail(), otp);
-            emailService.sendEmail(forgotPasswordDto.getEmail(), "Your OTP Code", "Your OTP code is: " + otp);
-            return new ResponseEntity<>("OTP sent to email " + forgotPasswordDto.getEmail(), HttpStatus.OK);
+        forgotPasswordValidator.validate(forgotPasswordDto);
+        if(forgotPasswordDto != null){
+            try{
+                Optional<User> optionalUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
+                if(optionalUser.isPresent()){
+                    String otp = OtpUtil.generateOtp();
+                    otpStorage.storeOtp(forgotPasswordDto.getEmail(), otp);
+                    emailService.sendEmail(forgotPasswordDto.getEmail(), "Your OTP Code", "Your OTP code is: " + otp);
+                    return new ResponseEntity<>("OTP sent to email " + forgotPasswordDto.getEmail(), HttpStatus.OK);
+                }
+                return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
+            }catch (Exception e){
+                log.error(e.toString());
+                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
-        return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
     }
 
     @Override
     public ResponseEntity<?> verifyOtp(OtpDto otpDto) {
-        final String otp = otpStorage.retrieveOtp(otpDto.getEmail());
-        if(otp != null && otp.equals(otpDto.getOtp())){
-            otpStorage.removeOtp(otpDto.getEmail());
-            return new ResponseEntity<>("OTP Verified", HttpStatus.OK);
+        otpValidator.validate(otpDto);
+        if(otpDto != null){
+            try{
+                final String otp = otpStorage.retrieveOtp(otpDto.getEmail());
+                if(otp != null && otp.equals(otpDto.getOtp())){
+                    otpStorage.removeOtp(otpDto.getEmail());
+                    return new ResponseEntity<>("OTP Verified", HttpStatus.OK);
+                }
+                return new ResponseEntity<>("Invalid OTP.", HttpStatus.OK);
+            }catch (Exception e){
+                log.error(e.toString());
+                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
-        return new ResponseEntity<>("Invalid OTP.", HttpStatus.OK);
     }
 
     @Override
     public ResponseEntity<?> newPassword(NewPasswordDto newPasswordDto) {
+        newPasswordValidator.validate(newPasswordDto);
+        if(newPasswordDto != null){
+            try{
+                Optional<User> optionalUser = userRepository.findByEmail(newPasswordDto.getEmail());
+                if(optionalUser.isPresent()) {
 
-        Optional<User> optionalUser = userRepository.findByEmail(newPasswordDto.getEmail());
-        if(optionalUser.isPresent()) {
+                    if (!newPasswordDto.getNewPassword().equals(newPasswordDto.getConfirmPassword())) {
+                        return new ResponseEntity<>("Password Confirmation Error", HttpStatus.OK);
+                    }
 
-            if (!newPasswordDto.getNewPassword().equals(newPasswordDto.getConfirmPassword())) {
-                return new ResponseEntity<>("Password Confirmation Error", HttpStatus.OK);
+                    User user = optionalUser.get();
+                    user.setPassword(passwordEncoder.encode(newPasswordDto.getNewPassword()));
+                    userRepository.save(user);
+                    return new ResponseEntity<>("Password Update Successfully",HttpStatus.OK);
+                }
+                return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
+            }catch (Exception e){
+                log.error(e.toString());
+                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
-
-            User user = optionalUser.get();
-            user.setPassword(passwordEncoder.encode(newPasswordDto.getNewPassword()));
-            userRepository.save(user);
-            return new ResponseEntity<>("Password Update Successfully",HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
-        return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
 
     }
 
