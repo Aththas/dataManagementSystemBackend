@@ -12,6 +12,7 @@ import com.mobitel.data_management.config.JwtService;
 import com.mobitel.data_management.other.emailService.EmailService;
 import com.mobitel.data_management.other.otpService.OtpStorage;
 import com.mobitel.data_management.other.otpService.OtpUtil;
+import com.mobitel.data_management.other.validator.ObjectValidator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +38,14 @@ public class AuthServiceImpl implements AuthService {
     private final TokenRepository tokenRepository;
     private final EmailService emailService;
     private final OtpStorage otpStorage;
+    private final ObjectValidator<AuthDto> authenticationValidator;
+    private final ObjectValidator<ForgotPasswordDto> forgotPasswordValidator;
+    private final ObjectValidator<OtpDto> otpValidator;
+    private final ObjectValidator<NewPasswordDto> newPasswordValidator;
 
     @Override
     public ResponseEntity<?> authentication(AuthDto authDto) {
+        authenticationValidator.validate(authDto);
         Optional<User> optionalUser = userRepository.findByEmail(authDto.getEmail());
         if(optionalUser.isPresent()){
             authenticationManager.authenticate(
@@ -93,6 +99,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ResponseEntity<?> forgotPassword(ForgotPasswordDto forgotPasswordDto) {
+        forgotPasswordValidator.validate(forgotPasswordDto);
         Optional<User> optionalUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
         if(optionalUser.isPresent()){
             String otp = OtpUtil.generateOtp();
@@ -105,6 +112,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ResponseEntity<?> verifyOtp(OtpDto otpDto) {
+        otpValidator.validate(otpDto);
         final String otp = otpStorage.retrieveOtp(otpDto.getEmail());
         if(otp != null && otp.equals(otpDto.getOtp())){
             otpStorage.removeOtp(otpDto.getEmail());
@@ -115,7 +123,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ResponseEntity<?> newPassword(NewPasswordDto newPasswordDto) {
-
+        newPasswordValidator.validate(newPasswordDto);
         Optional<User> optionalUser = userRepository.findByEmail(newPasswordDto.getEmail());
         if(optionalUser.isPresent()) {
 
