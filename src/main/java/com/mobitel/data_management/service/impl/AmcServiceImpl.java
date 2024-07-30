@@ -16,7 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,6 +82,22 @@ public class AmcServiceImpl implements AmcService {
         }else{
             log.error("View AMC: Null User ID");
             return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> viewAllAmc() {
+        try{
+            List<Amc> amcList = amcRepository.findAllByOrderByIdAsc();
+            if(amcList.isEmpty()){
+                log.error("View All AMC: Empty List");
+                return new ResponseEntity<>("Empty List",HttpStatus.OK);
+            }
+            return new ResponseEntity<>(amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
+
+        }catch(Exception e){
+            log.error("View All AMC: " + e);
+            return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

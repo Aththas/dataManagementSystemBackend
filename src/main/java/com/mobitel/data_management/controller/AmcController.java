@@ -21,4 +21,9 @@ public class AmcController {
     public ResponseEntity<?> viewAmc(@RequestParam Integer id){
         return amcService.viewAmc(id);
     }
+
+    @GetMapping("/viewAllAmcList")
+    public ResponseEntity<?> viewAllAmc(){
+        return amcService.viewAllAmc();
+    }
 }

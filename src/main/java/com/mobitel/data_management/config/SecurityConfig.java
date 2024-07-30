@@ -30,6 +30,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/demo").hasRole(ADMIN.name())
                         .requestMatchers("/api/v1/user/**").hasRole(ADMIN.name())
+                        .requestMatchers("/api/v1/amc/viewAmc").hasRole(ADMIN.name())
+                        .requestMatchers("/api/v1/amc/viewAllAmcList").hasRole(ADMIN.name())
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

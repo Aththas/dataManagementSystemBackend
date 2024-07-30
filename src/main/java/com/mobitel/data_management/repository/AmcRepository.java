@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 public interface AmcRepository extends JpaRepository<Amc,Integer> {
     Optional<Amc> findByContractName(String contractName);
+    List<Amc> findAllByOrderByIdAsc();
 }
