@@ -174,4 +174,35 @@ public class AmcServiceImpl implements AmcService {
             return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
         }
     }
+
+    @Override
+    public ResponseEntity<?> deleteMyAmc(Integer id) {
+        User user = getCurrentUser();
+        if(user != null){
+            if(id != null){
+                try{
+                    Optional<Amc> optionalAmc = amcRepository.findById(id);
+                    if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
+                        final String contractName = optionalAmc.get().getContractName();
+                        amcRepository.deleteById(id);
+                        log.info("Delete My AMC: AMC Contract Data Deleted - " + contractName);
+                        return new ResponseEntity<>("AMC Contract Deleted",HttpStatus.OK);
+                    }
+                    log.error("Delete My AMC: AMC Contract Not Found");
+                    return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
+                }catch (Exception e){
+                    log.error("Delete My AMC: " + e);
+                    return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }else{
+                log.error("Delete My AMC: Null User ID");
+                return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+            }
+        }else
+        {
+            log.error("Delete My AMC: Unauthorized Access");
+            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
 }

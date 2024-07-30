@@ -14,4 +14,5 @@ public interface AmcService {
 
     ResponseEntity<?> viewAllAmc(int page, int size, String sortBy, boolean ascending);
 
+    ResponseEntity<?> deleteMyAmc(Integer id);
 }
