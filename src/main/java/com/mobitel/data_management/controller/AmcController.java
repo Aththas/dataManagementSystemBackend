@@ -38,4 +38,9 @@ public class AmcController {
                                           @RequestParam String sortBy, @RequestParam boolean ascending){
         return amcService.viewAllMyAmc(page, size, sortBy, ascending);
     }
+
+    @DeleteMapping("/deleteMyAmc")
+    public ResponseEntity<?> deleteAmc(@RequestParam Integer id){
+        return amcService.deleteMyAmc(id);
+    }
 }
