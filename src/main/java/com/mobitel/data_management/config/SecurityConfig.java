@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 import static com.mobitel.data_management.auth.entity.user.Role.ADMIN;
+import static com.mobitel.data_management.auth.entity.user.Role.MANAGER;
 
 @Configuration
 @EnableWebSecurity
