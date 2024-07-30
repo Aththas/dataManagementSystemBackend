@@ -41,6 +41,12 @@ public class UserServiceImpl implements UserService {
                     return new ResponseEntity<>("Email already existed", HttpStatus.OK);
                 }
 
+                if(addUserDto.getEmail().endsWith("null"))
+                {
+                    log.error("Add User: Email with null at the end is restricted");
+                    return new ResponseEntity<>("Restricted Email Format",HttpStatus.OK);
+                }
+
                 User user = new User();
                 user.setFirstname(addUserDto.getFirstname());
                 user.setLastname(addUserDto.getLastname());
@@ -67,6 +73,11 @@ public class UserServiceImpl implements UserService {
             addUserValidator.validate(addUserDto);
             if(addUserDto != null){
                 try{
+                    if(addUserDto.getEmail().endsWith("null"))
+                    {
+                        log.error("Update User: Email with null at the end is restricted");
+                        return new ResponseEntity<>("Restricted Email Format",HttpStatus.OK);
+                    }
                     Optional<User> optionalUser = userRepository.findById(id);
                     if(optionalUser.isPresent()){
                         User user = optionalUser.get();
@@ -108,7 +119,7 @@ public class UserServiceImpl implements UserService {
                 }
                 log.error("View User: User Not Found");
                 return new ResponseEntity<>("User Not Found",HttpStatus.OK);
-            } catch (Exception e){
+            }catch (Exception e){
                 log.error("View User: " + e);
                 return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
@@ -131,6 +142,70 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e){
             log.error("View Users: " + e);
             return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public ResponseEntity<String> disableUser(Integer id) {
+        //this will disable users by adding "null" to the end of the user email
+        //so first check if accounts with "null" at the end of the user email to verify if it is already disabled or not
+        if(id != null){
+            try{
+                Optional<User> optionalUser = userRepository.findById(id);
+                if(optionalUser.isPresent()){
+                    User user = optionalUser.get();
+                    if(user.getEmail().endsWith("null")){
+                        log.warn("Disable User: User Already Disabled");
+                        return new ResponseEntity<>("User already disabled",HttpStatus.OK);
+                    }
+                    user.setEmail(user.getEmail() + "null");
+                    userRepository.save(user);
+
+                    log.info("Disable User: Disabled " + user.getEmail().substring(0,user.getEmail().length()-4));
+                    return new ResponseEntity<>("User Disabled",HttpStatus.OK);
+                }
+
+                log.error("Disable User: User Not Found");
+                return new ResponseEntity<>("User Not Found",HttpStatus.OK);
+            }catch (Exception e){
+                log.error("Disable User: " + e);
+                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("Disable User: Null User ID");
+            return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ResponseEntity<String> enableUser(Integer id) {
+        //this will enable users by removing "null" from the end of the user email
+        //so first check if accounts with "null" at the end of the user email to verify if it is already disabled or not
+        if(id != null){
+            try{
+                Optional<User> optionalUser = userRepository.findById(id);
+                if(optionalUser.isPresent()){
+                    User user = optionalUser.get();
+                    if(user.getEmail().endsWith("null")){
+                        user.setEmail(user.getEmail().substring(0,user.getEmail().length()-4));
+                        userRepository.save(user);
+
+                        log.info("Enable User: Enabled " + user.getEmail());
+                        return new ResponseEntity<>("User Enable",HttpStatus.OK);
+                    }
+                    log.warn("Enable User: User Already Enabled");
+                    return new ResponseEntity<>("User already Enabled",HttpStatus.OK);
+                }
+
+                log.error("Enable User: User Not Found");
+                return new ResponseEntity<>("User Not Found",HttpStatus.OK);
+            }catch (Exception e){
+                log.error("Enable User: " + e);
+                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("Enable User: Null User ID");
+            return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
         }
     }
 }

@@ -12,4 +12,8 @@ public interface UserService {
     ResponseEntity<?> viewUser(Integer id);
 
     ResponseEntity<?> viewUsers();
+
+    ResponseEntity<String> disableUser(Integer id);
+
+    ResponseEntity<String> enableUser(Integer id);
 }

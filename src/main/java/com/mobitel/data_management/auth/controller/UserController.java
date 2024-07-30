@@ -30,4 +30,14 @@ public class UserController {
     public ResponseEntity<?> viewUsers(){
         return userService.viewUsers();
     }
+
+    @PutMapping("/disableUser")
+    public ResponseEntity<String> disableUser(@RequestParam Integer id){
+        return userService.disableUser(id);
+    }
+
+    @PutMapping("/enableUser")
+    public ResponseEntity<String> enableUser(@RequestParam Integer id){
+        return userService.enableUser(id);
+    }
 }

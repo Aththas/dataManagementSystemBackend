@@ -50,6 +50,12 @@ public class AuthServiceImpl implements AuthService {
         authenticationValidator.validate(authDto);
         if(authDto != null){
             try{
+                if(authDto.getEmail().endsWith("null"))
+                {
+                    log.error("Authentication: User Account has been restricted");
+                    return new ResponseEntity<>("User Account has been restricted, Contact Admin to get back",HttpStatus.OK);
+                }
+
                 Optional<User> optionalUser = userRepository.findByEmail(authDto.getEmail());
                 if(optionalUser.isPresent()){
                     authenticationManager.authenticate(
@@ -119,6 +125,11 @@ public class AuthServiceImpl implements AuthService {
         forgotPasswordValidator.validate(forgotPasswordDto);
         if(forgotPasswordDto != null){
             try{
+                if(forgotPasswordDto.getEmail().endsWith("null"))
+                {
+                    log.error("Forgot password: Email with null at the end is restricted");
+                    return new ResponseEntity<>("Restricted Email Format",HttpStatus.OK);
+                }
                 Optional<User> optionalUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
                 if(optionalUser.isPresent()){
                     String otp = OtpUtil.generateOtp();
