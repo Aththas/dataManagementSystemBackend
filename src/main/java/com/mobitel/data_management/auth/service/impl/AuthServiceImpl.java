@@ -52,6 +52,11 @@ public class AuthServiceImpl implements AuthService {
             try{
                 Optional<User> optionalUser = userRepository.findByEmail(authDto.getEmail());
                 if(optionalUser.isPresent()){
+                    if(authDto.getEmail().endsWith("null"))
+                    {
+                        log.error("Authentication: User Account has been restricted");
+                        return new ResponseEntity<>("User Account has been restricted, Contact Admin to get back",HttpStatus.OK);
+                    }
                     authenticationManager.authenticate(
                             new UsernamePasswordAuthenticationToken(
                                     authDto.getEmail(),
@@ -121,6 +126,11 @@ public class AuthServiceImpl implements AuthService {
             try{
                 Optional<User> optionalUser = userRepository.findByEmail(forgotPasswordDto.getEmail());
                 if(optionalUser.isPresent()){
+                    if(forgotPasswordDto.getEmail().endsWith("null"))
+                    {
+                        log.error("Forgot Password: User Account has been restricted");
+                        return new ResponseEntity<>("User Account has been restricted, Contact Admin to get back",HttpStatus.OK);
+                    }
                     String otp = OtpUtil.generateOtp();
                     otpStorage.storeOtp(forgotPasswordDto.getEmail(), otp);
                     emailService.sendEmail(forgotPasswordDto.getEmail(), "Your OTP Code", "Your OTP code is: " + otp);
