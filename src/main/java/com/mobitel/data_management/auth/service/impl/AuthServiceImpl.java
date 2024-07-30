@@ -128,8 +128,8 @@ public class AuthServiceImpl implements AuthService {
                 if(optionalUser.isPresent()){
                     if(forgotPasswordDto.getEmail().endsWith("null"))
                     {
-                        log.error("Forgot password: Email with null at the end is restricted");
-                        return new ResponseEntity<>("Restricted Email Format",HttpStatus.OK);
+                        log.error("Forgot Password: User Account has been restricted");
+                        return new ResponseEntity<>("User Account has been restricted, Contact Admin to get back",HttpStatus.OK);
                     }
                     String otp = OtpUtil.generateOtp();
                     otpStorage.storeOtp(forgotPasswordDto.getEmail(), otp);
