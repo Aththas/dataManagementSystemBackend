@@ -7,4 +7,10 @@ public interface AmcService {
     ResponseEntity<String> addAmc(AddUpdateAmcDto addUpdateAmcDto);
 
     ResponseEntity<?> viewAmc(Integer id);
+
+    ResponseEntity<?> viewAllAmc();
+
+    ResponseEntity<?> viewMyAmc(Integer id);
+
+    ResponseEntity<?> viewAllMyAmc();
 }

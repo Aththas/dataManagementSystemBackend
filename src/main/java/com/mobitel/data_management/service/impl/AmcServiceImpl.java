@@ -16,7 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -69,17 +71,85 @@ public class AmcServiceImpl implements AmcService {
     @Override
     public ResponseEntity<?> viewAmc(Integer id) {
         if(id != null){
-            Optional<Amc> optionalAmc = amcRepository.findById(id);
-            if(optionalAmc.isPresent()){
-                Amc amc = optionalAmc.get();
-                log.info("View AMC: AMC Contract Data Retrieved - " + amc.getContractName());
-                return new ResponseEntity<>(amcMapper.userViewMapper(amc),HttpStatus.OK);
+            try{
+                Optional<Amc> optionalAmc = amcRepository.findById(id);
+                if(optionalAmc.isPresent()){
+                    Amc amc = optionalAmc.get();
+                    log.info("View AMC: AMC Contract Data Retrieved - " + amc.getContractName());
+                    return new ResponseEntity<>(amcMapper.userViewMapper(amc),HttpStatus.OK);
+                }
+                log.error("View AMC: AMC Contract Not Found");
+                return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
+            }catch (Exception e){
+                log.error("View AMC: " + e);
+                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
-            log.error("View AMC: AMC Contract Not Found");
-            return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
         }else{
             log.error("View AMC: Null User ID");
             return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> viewAllAmc() {
+        try{
+            List<Amc> amcList = amcRepository.findAllByOrderByIdAsc();
+            if(amcList.isEmpty()){
+                log.error("View All AMC: Empty List");
+                return new ResponseEntity<>("Empty List",HttpStatus.OK);
+            }
+            log.info("View All AMC: Listed All AMC List");
+            return new ResponseEntity<>(amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
+
+        }catch(Exception e){
+            log.error("View All AMC: " + e);
+            return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> viewMyAmc(Integer id) {
+        User user = getCurrentUser();
+        if(user != null){
+            if(id != null){
+                try{
+                    Optional<Amc> optionalAmc = amcRepository.findById(id);
+                    if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
+                        Amc amc = optionalAmc.get();
+                        log.info("View My AMC: AMC Contract Data Retrieved - " + amc.getContractName());
+                        return new ResponseEntity<>(amcMapper.userViewMapper(amc),HttpStatus.OK);
+                    }
+                    log.error("View My AMC: AMC Contract Not Found");
+                    return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
+                }catch (Exception e){
+                    log.error("View My AMC: " + e);
+                    return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }else{
+                log.error("View My AMC: Null User ID");
+                return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+            }
+        }else{
+            log.error("View My AMC: Unauthorized Access");
+            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> viewAllMyAmc() {
+        User user = getCurrentUser();
+        if(user != null){
+            List<Amc> amcList = amcRepository.findAllByUserIdOrderByIdAsc(user.getId());
+            if(amcList.isEmpty()){
+                log.error("View All My AMC: Empty List");
+                return new ResponseEntity<>("Empty List",HttpStatus.OK);
+            }
+            log.info("View All My AMC: Listed All My AMC List");
+            return new ResponseEntity<>(amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
+
+        }else{
+            log.error("View All My AMC: Unauthorized Access");
+            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
         }
     }
 }

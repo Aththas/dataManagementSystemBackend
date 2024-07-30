@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 import static com.mobitel.data_management.auth.entity.user.Role.ADMIN;
+import static com.mobitel.data_management.auth.entity.user.Role.MANAGER;
 
 @Configuration
 @EnableWebSecurity
@@ -30,6 +31,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/demo").hasRole(ADMIN.name())
                         .requestMatchers("/api/v1/user/**").hasRole(ADMIN.name())
+                        .requestMatchers("/api/v1/amc/viewAmc").hasRole(ADMIN.name())
+                        .requestMatchers("/api/v1/amc/viewAllAmcList").hasRole(ADMIN.name())
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

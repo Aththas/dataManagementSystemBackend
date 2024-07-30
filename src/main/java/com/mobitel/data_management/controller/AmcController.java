@@ -18,7 +18,22 @@ public class AmcController {
     }
 
     @GetMapping("/viewAmc")
-    public ResponseEntity<?> viewAmc(@RequestParam Integer id){
+    public ResponseEntity<?> viewAmc(@RequestParam Integer id){ //admin only
         return amcService.viewAmc(id);
+    }
+
+    @GetMapping("/viewAllAmcList")
+    public ResponseEntity<?> viewAllAmc(){ //admin only
+        return amcService.viewAllAmc();
+    }
+
+    @GetMapping("/viewMyAmc")
+    public ResponseEntity<?> viewMyAmc(@RequestParam Integer id){
+        return amcService.viewMyAmc(id);
+    }
+
+    @GetMapping("/viewAllMyAmcList")
+    public ResponseEntity<?> viewAllMyAmc(){
+        return amcService.viewAllMyAmc();
     }
 }
