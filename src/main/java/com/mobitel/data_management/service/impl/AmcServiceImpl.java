@@ -11,6 +11,10 @@ import com.mobitel.data_management.repository.AmcRepository;
 import com.mobitel.data_management.service.AmcService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -91,9 +95,18 @@ public class AmcServiceImpl implements AmcService {
     }
 
     @Override
-    public ResponseEntity<?> viewAllAmc() {
+    public ResponseEntity<?> viewAllAmc(int page, int size, String sortBy, boolean ascending) {
         try{
-            List<Amc> amcList = amcRepository.findAllByOrderByIdAsc();
+            // Create a Sort object based on the sortBy parameter and direction
+            Sort sort = Sort.by(sortBy);
+            sort = ascending ? sort.ascending() : sort.descending();
+
+            // Create a Pageable object with the provided page, size, and sort
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            // Retrieve the paginated and sorted results
+            Page<Amc> amcList = amcRepository.findAll(pageable);
+
             if(amcList.isEmpty()){
                 log.error("View All AMC: Empty List");
                 return new ResponseEntity<>("Empty List",HttpStatus.OK);
@@ -136,10 +149,19 @@ public class AmcServiceImpl implements AmcService {
     }
 
     @Override
-    public ResponseEntity<?> viewAllMyAmc() {
+    public ResponseEntity<?> viewAllMyAmc(int page, int size, String sortBy, boolean ascending) {
         User user = getCurrentUser();
         if(user != null){
-            List<Amc> amcList = amcRepository.findAllByUserIdOrderByIdAsc(user.getId());
+            // Create a Sort object based on the sortBy parameter and direction
+            Sort sort = Sort.by(sortBy);
+            sort = ascending ? sort.ascending() : sort.descending();
+
+            // Create a Pageable object with the provided page, size, and sort
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            // Retrieve the paginated and sorted results
+            Page<Amc> amcList = amcRepository.findAllByUserId(user.getId(), pageable);
+
             if(amcList.isEmpty()){
                 log.error("View All My AMC: Empty List");
                 return new ResponseEntity<>("Empty List",HttpStatus.OK);

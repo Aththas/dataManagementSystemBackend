@@ -22,9 +22,10 @@ public class AmcController {
         return amcService.viewAmc(id);
     }
 
-    @GetMapping("/viewAllAmcList")
-    public ResponseEntity<?> viewAllAmc(){ //admin only
-        return amcService.viewAllAmc();
+    @GetMapping("/viewAllAmcList")//with sorting and pagination
+    public ResponseEntity<?> viewAllAmc(@RequestParam int page, @RequestParam int size,
+                                        @RequestParam String sortBy, @RequestParam boolean ascending){ //admin only
+        return amcService.viewAllAmc(page, size, sortBy, ascending);
     }
 
     @GetMapping("/viewMyAmc")
@@ -32,8 +33,9 @@ public class AmcController {
         return amcService.viewMyAmc(id);
     }
 
-    @GetMapping("/viewAllMyAmcList")
-    public ResponseEntity<?> viewAllMyAmc(){
-        return amcService.viewAllMyAmc();
+    @GetMapping("/viewAllMyAmcList")//with sorting and pagination
+    public ResponseEntity<?> viewAllMyAmc(@RequestParam int page, @RequestParam int size,
+                                          @RequestParam String sortBy, @RequestParam boolean ascending){
+        return amcService.viewAllMyAmc(page, size, sortBy, ascending);
     }
 }

@@ -8,9 +8,10 @@ public interface AmcService {
 
     ResponseEntity<?> viewAmc(Integer id);
 
-    ResponseEntity<?> viewAllAmc();
-
     ResponseEntity<?> viewMyAmc(Integer id);
 
-    ResponseEntity<?> viewAllMyAmc();
+    ResponseEntity<?> viewAllMyAmc(int page, int size, String sortBy, boolean ascending);
+
+    ResponseEntity<?> viewAllAmc(int page, int size, String sortBy, boolean ascending);
+
 }
