@@ -69,15 +69,17 @@ public class AuthServiceImpl implements AuthService {
                     responseDto.setAccessToken(accessToken);
                     responseDto.setRefreshToken(refreshToken);
 
+                    log.info("Authentication: Success - " + authDto.getEmail());
                     return new ResponseEntity<>(responseDto,HttpStatus.OK);
                 }
-
+                log.error("Authentication: Failed");
                 return new ResponseEntity<>("Authentication Failed", HttpStatus.OK);
             }catch (Exception e){
-                log.error(e.toString());
+                log.error("Authentication: " + e);
                 return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
+            log.error("Authentication: authDto object is null");
             return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
     }
@@ -86,6 +88,7 @@ public class AuthServiceImpl implements AuthService {
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
         final String authHeader = request.getHeader("Authorization");
         if(authHeader == null || !authHeader.startsWith("Bearer ")){
+            log.error("Refresh Token: Invalid Access Token Type");
             return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
         }
         final String jwt = authHeader.substring(7);
@@ -101,10 +104,13 @@ public class AuthServiceImpl implements AuthService {
                 responseDto.setAccessToken(accessToken);
                 responseDto.setRefreshToken(jwt);
 
+                log.info("Refresh Token: Generated - " + userEmail);
                 return new ResponseEntity<>(responseDto,HttpStatus.OK);
             }
+            log.error("Refresh Token: Token Expired");
             return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
         }
+        log.error("Refresh Token: Invalid Access Token");
         return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
     }
 
@@ -118,14 +124,18 @@ public class AuthServiceImpl implements AuthService {
                     String otp = OtpUtil.generateOtp();
                     otpStorage.storeOtp(forgotPasswordDto.getEmail(), otp);
                     emailService.sendEmail(forgotPasswordDto.getEmail(), "Your OTP Code", "Your OTP code is: " + otp);
+
+                    log.info("Forgot password: OTP send to email - " + forgotPasswordDto.getEmail());
                     return new ResponseEntity<>("OTP sent to email " + forgotPasswordDto.getEmail(), HttpStatus.OK);
                 }
-                return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
+                log.error("Forgot password: Invalid User Email");
+                return new ResponseEntity<>("Invalid User Email",HttpStatus.FORBIDDEN);
             }catch (Exception e){
-                log.error(e.toString());
+                log.error("Forgot password: " + e);
                 return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
+            log.error("Forgot password: forgotPasswordDto object is null");
             return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
     }
@@ -138,14 +148,18 @@ public class AuthServiceImpl implements AuthService {
                 final String otp = otpStorage.retrieveOtp(otpDto.getEmail());
                 if(otp != null && otp.equals(otpDto.getOtp())){
                     otpStorage.removeOtp(otpDto.getEmail());
+
+                    log.info("Verify Otp: OTP Verified");
                     return new ResponseEntity<>("OTP Verified", HttpStatus.OK);
                 }
+                log.error("Verify Otp: Invalid OTP");
                 return new ResponseEntity<>("Invalid OTP.", HttpStatus.OK);
             }catch (Exception e){
                 log.error(e.toString());
                 return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
+            log.error("Verify Otp: otpDto object is null");
             return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
     }
@@ -159,20 +173,25 @@ public class AuthServiceImpl implements AuthService {
                 if(optionalUser.isPresent()) {
 
                     if (!newPasswordDto.getNewPassword().equals(newPasswordDto.getConfirmPassword())) {
+                        log.error("New Password: Password Confirmation Error");
                         return new ResponseEntity<>("Password Confirmation Error", HttpStatus.OK);
                     }
 
                     User user = optionalUser.get();
                     user.setPassword(passwordEncoder.encode(newPasswordDto.getNewPassword()));
                     userRepository.save(user);
+
+                    log.info("New Password: Password Updated for user " + user.getEmail());
                     return new ResponseEntity<>("Password Update Successfully",HttpStatus.OK);
                 }
+                log.error("New Password: Invalid User");
                 return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
             }catch (Exception e){
-                log.error(e.toString());
+                log.error("New Password: " + e);
                 return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
+            log.error("New Password: newPasswordDto object is null");
             return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
 

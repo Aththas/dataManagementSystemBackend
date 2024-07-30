@@ -32,11 +32,12 @@ public class UserServiceImpl implements UserService {
     private String password;
     @Override
     public ResponseEntity<String> addUser(AddUserDto addUserDto) {
+        addUserValidator.validate(addUserDto);
         if(addUserDto != null){
             try{
-                addUserValidator.validate(addUserDto);
                 Optional<User> optionalUser = userRepository.findByEmail(addUserDto.getEmail());
                 if(optionalUser.isPresent()){
+                    log.error("Add User: Email already existed - " + addUserDto.getEmail());
                     return new ResponseEntity<>("Email already existed", HttpStatus.OK);
                 }
 
@@ -48,12 +49,14 @@ public class UserServiceImpl implements UserService {
                 user.setPassword(passwordEncoder.encode(password));
                 userRepository.save(user);
 
+                log.info("Add User: New User Added - " + addUserDto.getEmail());
                 return new ResponseEntity<>("User Added Successfully",HttpStatus.CREATED);
             } catch (Exception e){
-                log.error(e.toString());
+                log.error("Add User: " + e);
                 return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
+            log.error("Add User: addUserDto object is null");
             return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
         }
     }
@@ -61,9 +64,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResponseEntity<String> updateUser(Integer id, AddUserDto addUserDto) {
         if(id != null){
+            addUserValidator.validate(addUserDto);
             if(addUserDto != null){
                 try{
-                    addUserValidator.validate(addUserDto);
                     Optional<User> optionalUser = userRepository.findById(id);
                     if(optionalUser.isPresent()){
                         User user = optionalUser.get();
@@ -73,18 +76,22 @@ public class UserServiceImpl implements UserService {
                         user.setRole(Role.valueOf(addUserDto.getRole()));
                         userRepository.save(user);
 
+                        log.info("Update User: User Updated - " + addUserDto.getEmail());
                         return new ResponseEntity<>("User Updated Successfully",HttpStatus.OK);
                     }
+                    log.error("Update User: User Not Found");
                     return new ResponseEntity<>("User Not Found",HttpStatus.OK);
                 } catch (Exception e){
-                    log.error(e.toString());
+                    log.error("Update User: " + e);
                     return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }
             else{
+                log.error("Update User: addUserDto object is null");
                 return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
             }
         }else{
+            log.error("Update User: Null User ID");
             return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
         }
     }
@@ -96,14 +103,17 @@ public class UserServiceImpl implements UserService {
                 Optional<User> optionalUser = userRepository.findById(id);
                 if(optionalUser.isPresent()){
                     User user = optionalUser.get();
+                    log.info("View User: User Data Retrieved - " + user.getEmail());
                     return new ResponseEntity<>(userMapper.userViewMapper(user),HttpStatus.OK);
                 }
+                log.error("View User: User Not Found");
                 return new ResponseEntity<>("User Not Found",HttpStatus.OK);
             } catch (Exception e){
-                log.error(e.toString());
+                log.error("View User: " + e);
                 return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
+            log.error("View User: Null User ID");
             return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
         }
     }
@@ -112,12 +122,14 @@ public class UserServiceImpl implements UserService {
     public ResponseEntity<?> viewUsers() {
         try {
             List<User> users = userRepository.findAllByOrderByIdAsc();
-            if(users.isEmpty())
+            if(users.isEmpty()){
+                log.error("View Users: Empty User List");
                 return new ResponseEntity<>("User List is Empty",HttpStatus.OK);
-
+            }
+            log.info("View Users: " + (long) users.size() + " User Data Retrieved");
             return new ResponseEntity<>(users.stream().map(userMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
         } catch (Exception e){
-            log.error(e.toString());
+            log.error("View Users: " + e);
             return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
