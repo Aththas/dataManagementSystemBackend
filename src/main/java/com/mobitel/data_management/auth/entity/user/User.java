@@ -1,12 +1,12 @@
 package com.mobitel.data_management.auth.entity.user;
 
 import com.mobitel.data_management.auth.entity.token.Token;
+import com.mobitel.data_management.entity.Amc;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -30,6 +30,9 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "user")
     private List<Token> tokens;
+
+    @OneToMany(mappedBy = "user")
+    private List<Amc> amcs;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
