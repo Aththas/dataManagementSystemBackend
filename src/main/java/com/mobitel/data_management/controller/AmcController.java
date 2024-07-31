@@ -17,6 +17,11 @@ public class AmcController {
         return amcService.addAmc(addUpdateAmcDto);
     }
 
+    @PutMapping("/updateMyAmc")
+    public ResponseEntity<String> updateAmc(@RequestParam Integer id, @RequestBody AddUpdateAmcDto addUpdateAmcDto){
+        return amcService.updateAmc(id, addUpdateAmcDto);
+    }
+
     @GetMapping("/viewAmc")
     public ResponseEntity<?> viewAmc(@RequestParam Integer id){ //admin only
         return amcService.viewAmc(id);

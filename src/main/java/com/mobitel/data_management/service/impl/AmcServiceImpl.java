@@ -4,12 +4,12 @@ import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.dto.requestDto.AddUpdateAmcDto;
 import com.mobitel.data_management.entity.Amc;
-import com.mobitel.data_management.entity.UserActivityAmc;
 import com.mobitel.data_management.other.csvService.AmcCsvConverter;
+import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
 import com.mobitel.data_management.other.mapper.AmcMapper;
+import com.mobitel.data_management.other.stringUtility.StringUtils;
 import com.mobitel.data_management.other.validator.ObjectValidator;
 import com.mobitel.data_management.repository.AmcRepository;
-import com.mobitel.data_management.repository.UserActivityAmcRepository;
 import com.mobitel.data_management.service.AmcService;
 import com.mobitel.data_management.service.UserActivityAmcService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -37,6 +36,8 @@ public class AmcServiceImpl implements AmcService {
     private final AmcMapper amcMapper;
     private final AmcCsvConverter amcCsvConverter;
     private final UserActivityAmcService userActivityAmcService;
+    private final StringUtils stringUtils;
+    private final DateFormatConverter dateFormatConverter;
 
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
@@ -57,6 +58,7 @@ public class AmcServiceImpl implements AmcService {
                     }
 
                     String action = "add";
+                    String description = user.getEmail() + " Added a Row";
                     Integer currentVersion = userActivityAmcService.findLastId()+1;
 
                     String beforeName= "before version " + currentVersion;
@@ -76,7 +78,7 @@ public class AmcServiceImpl implements AmcService {
                             amc.getAmcPercentageUponPurchasePrice() + " | " + amc.getCategory()+ " | " +
                             amc.getUser().getUsername();
 
-                    userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion);
+                    userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion, description);
 
                     log.info("AMC Contract Add: Success");
                     return new ResponseEntity<>("AMC Contractor Added",HttpStatus.CREATED);
@@ -92,7 +94,73 @@ public class AmcServiceImpl implements AmcService {
             log.error("AMC Contract Add: Unauthorized Access");
             return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
         }
+    }
 
+    @Override
+    public ResponseEntity<String> updateAmc(Integer id, AddUpdateAmcDto addUpdateAmcDto) {
+        User user = getCurrentUser();
+        if(user != null){
+            if(id != null){
+                addAmcObjectValidator.validate(addUpdateAmcDto);
+                if(addUpdateAmcDto != null){
+                    try{
+                        Optional<Amc> optionalAmc = amcRepository.findById(id);
+                        if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
+                            Amc amc = optionalAmc.get();
+                            String action = "update";
+                            String basicDescription = amcMapper.getUpdateDescription(amc, addUpdateAmcDto);
+                            if(!basicDescription.equals("no Changes")){
+                                String description = stringUtils.removeTrailingCommaAndSpace(basicDescription);
+                                int currentVersion = userActivityAmcService.findLastId()+1;
+
+                                String formattedAmcStartDateString = dateFormatConverter.convertDateFormat(String.valueOf(amc.getStartDate()));
+                                String formattedAmcEndDateString = dateFormatConverter.convertDateFormat(String.valueOf(amc.getEndDate()));
+
+                                String beforeName= "before version " + currentVersion;
+                                String filePathBeforeUpdate = amcCsvConverter.generateCsvForAmc(beforeName);
+                                String rowBefore = amc.getUserDivision() + " | " + amc.getContractName() + " | " +
+                                        amc.getExistingPartner() + " | " + amc.getInitialCostUSD() + " | " +
+                                        amc.getInitialCostLKR() + " | " + formattedAmcStartDateString + " | " +
+                                        formattedAmcEndDateString+ " | " + amc.getAmcValueUSD() + " | " + amc.getAmcValueLKR()+ " | " +
+                                        amc.getAmcPercentageUponPurchasePrice() + " | " + amc.getCategory()+ " | " +
+                                        amc.getUser().getUsername();
+
+                                amcRepository.save(amcMapper.addUpdateAmcMapper(amc,addUpdateAmcDto));
+
+                                String afterName= "After version " + currentVersion;
+                                String filePathAfterUpdate = amcCsvConverter.generateCsvForAmc(afterName);
+                                String rowAfter = amc.getUserDivision() + " | " + amc.getContractName() + " | " +
+                                        amc.getExistingPartner() + " | " + amc.getInitialCostUSD() + " | " +
+                                        amc.getInitialCostLKR() + " | " + amc.getStartDate()+ " | " + amc.getEndDate()+ " | " +
+                                        amc.getAmcValueUSD() + " | " + amc.getAmcValueLKR()+ " | " +
+                                        amc.getAmcPercentageUponPurchasePrice() + " | " + amc.getCategory()+ " | " +
+                                        amc.getUser().getUsername();
+
+                                userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion, description);
+
+
+                                log.info("AMC Contract Update: Success");
+                                return new ResponseEntity<>("AMC Contractor Updated",HttpStatus.OK);
+                            }
+                            log.info("AMC Contract Update: Nothing is changed");
+                            return new ResponseEntity<>("Nothing is changed",HttpStatus.OK);
+                        }
+                        log.error("AMC Contract Update: AMC Contract Not Found");
+                        return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
+                    }catch (Exception e){
+                        log.error("AMC Contract Update: " + e);
+                        return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
+                log.error("AMC Contract Update: addUpdateAmcDto object is null");
+                return new ResponseEntity<>("Null values are not permitted", HttpStatus.BAD_REQUEST);
+            }
+            log.error("AMC Contract Update: Null User ID");
+            return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+        }else{
+            log.error("AMC Contract Update: Unauthorized Access");
+            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+        }
     }
 
     @Override
@@ -208,6 +276,7 @@ public class AmcServiceImpl implements AmcService {
                     if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
                         Amc amc = optionalAmc.get();
                         String action = "delete";
+                        String description = user.getEmail() + " Deleted a Row";
                         Integer currentVersion = userActivityAmcService.findLastId()+1;
 
                         String beforeName= "before version " + currentVersion;
@@ -225,7 +294,7 @@ public class AmcServiceImpl implements AmcService {
                         String filePathAfterUpdate = amcCsvConverter.generateCsvForAmc(afterName);
                         String rowAfter = "";
 
-                        userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion);
+                        userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion,description);
 
                         log.info("Delete My AMC: AMC Contract Data Deleted - " + amc.getContractName());
                         return new ResponseEntity<>("AMC Contract Deleted",HttpStatus.OK);
@@ -246,5 +315,7 @@ public class AmcServiceImpl implements AmcService {
             return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
         }
     }
+
+
 
 }
