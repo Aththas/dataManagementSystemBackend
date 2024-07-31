@@ -56,9 +56,27 @@ public class AmcServiceImpl implements AmcService {
                         return new ResponseEntity<>("Contract Name Already Exist",HttpStatus.OK);
                     }
 
+                    String action = "add";
+                    Integer currentVersion = userActivityAmcService.findLastId()+1;
+
+                    String beforeName= "before version " + currentVersion;
+                    String filePathBeforeUpdate = amcCsvConverter.generateCsvForAmc(beforeName);
+                    String rowBefore = "";
+
                     Amc amc = new Amc();
                     amc.setUser(user);
                     amcRepository.save(amcMapper.addUpdateAmcMapper(amc,addUpdateAmcDto));
+
+                    String afterName= "After version " + currentVersion;
+                    String filePathAfterUpdate = amcCsvConverter.generateCsvForAmc(afterName);
+                    String rowAfter = amc.getUserDivision() + " | " + amc.getContractName() + " | " +
+                            amc.getExistingPartner() + " | " + amc.getInitialCostUSD() + " | " +
+                            amc.getInitialCostLKR() + " | " + amc.getStartDate()+ " | " + amc.getEndDate()+ " | " +
+                            amc.getAmcValueUSD() + " | " + amc.getAmcValueLKR()+ " | " +
+                            amc.getAmcPercentageUponPurchasePrice() + " | " + amc.getCategory()+ " | " +
+                            amc.getUser().getUsername();
+
+                    userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion);
 
                     log.info("AMC Contract Add: Success");
                     return new ResponseEntity<>("AMC Contractor Added",HttpStatus.CREATED);
@@ -208,8 +226,6 @@ public class AmcServiceImpl implements AmcService {
                         String rowAfter = "";
 
                         userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion);
-
-
 
                         log.info("Delete My AMC: AMC Contract Data Deleted - " + amc.getContractName());
                         return new ResponseEntity<>("AMC Contract Deleted",HttpStatus.OK);
