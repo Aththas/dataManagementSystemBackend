@@ -5,11 +5,16 @@ import com.mobitel.data_management.auth.entity.user.Role;
 import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.UserService;
+import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.other.mapper.UserMapper;
 import com.mobitel.data_management.other.validator.ObjectValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -130,14 +135,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ResponseEntity<?> viewUsers() {
+    public ResponseEntity<?> viewUsers(int page, int size, String sortBy, boolean ascending) {
         try {
-            List<User> users = userRepository.findAllByOrderByIdAsc();
+            // Create a Sort object based on the sortBy parameter and direction
+            Sort sort = Sort.by(sortBy);
+            sort = ascending ? sort.ascending() : sort.descending();
+
+            // Create a Pageable object with the provided page, size, and sort
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            // Retrieve the paginated and sorted results
+            Page<User> users = userRepository.findAll(pageable);
             if(users.isEmpty()){
                 log.error("View Users: Empty User List");
                 return new ResponseEntity<>("User List is Empty",HttpStatus.OK);
             }
-            log.info("View Users: " + (long) users.size() + " User Data Retrieved");
+            log.info("View Users: User Data Retrieved");
             return new ResponseEntity<>(users.stream().map(userMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
         } catch (Exception e){
             log.error("View Users: " + e);

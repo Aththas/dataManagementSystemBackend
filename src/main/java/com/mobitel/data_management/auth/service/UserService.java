@@ -11,7 +11,7 @@ public interface UserService {
 
     ResponseEntity<?> viewUser(Integer id);
 
-    ResponseEntity<?> viewUsers();
+    ResponseEntity<?> viewUsers(int page, int size, String sortBy, boolean ascending);
 
     ResponseEntity<String> disableUser(Integer id);
 

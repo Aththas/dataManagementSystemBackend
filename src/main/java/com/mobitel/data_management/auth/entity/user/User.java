@@ -2,6 +2,7 @@ package com.mobitel.data_management.auth.entity.user;
 
 import com.mobitel.data_management.auth.entity.token.Token;
 import com.mobitel.data_management.entity.Amc;
+import com.mobitel.data_management.entity.UserActivityAmc;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -33,6 +34,9 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "user")
     private List<Amc> amcs;
+
+    @OneToMany(mappedBy = "user")
+    private List<UserActivityAmc> userActivityAmcs;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

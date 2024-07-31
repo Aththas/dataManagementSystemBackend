@@ -4,11 +4,14 @@ import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.dto.requestDto.AddUpdateAmcDto;
 import com.mobitel.data_management.entity.Amc;
+import com.mobitel.data_management.entity.UserActivityAmc;
+import com.mobitel.data_management.other.csvService.AmcCsvConverter;
 import com.mobitel.data_management.other.mapper.AmcMapper;
-import com.mobitel.data_management.other.mapper.UserMapper;
 import com.mobitel.data_management.other.validator.ObjectValidator;
 import com.mobitel.data_management.repository.AmcRepository;
+import com.mobitel.data_management.repository.UserActivityAmcRepository;
 import com.mobitel.data_management.service.AmcService;
+import com.mobitel.data_management.service.UserActivityAmcService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,6 +35,8 @@ public class AmcServiceImpl implements AmcService {
     private final ObjectValidator<AddUpdateAmcDto> addAmcObjectValidator;
     private final AmcRepository amcRepository;
     private final AmcMapper amcMapper;
+    private final AmcCsvConverter amcCsvConverter;
+    private final UserActivityAmcService userActivityAmcService;
 
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
@@ -183,9 +188,30 @@ public class AmcServiceImpl implements AmcService {
                 try{
                     Optional<Amc> optionalAmc = amcRepository.findById(id);
                     if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
-                        final String contractName = optionalAmc.get().getContractName();
+                        Amc amc = optionalAmc.get();
+                        String action = "delete";
+                        Integer currentVersion = userActivityAmcService.findLastId()+1;
+
+                        String beforeName= "before version " + currentVersion;
+                        String filePathBeforeUpdate = amcCsvConverter.generateCsvForAmc(beforeName);
+                        String rowBefore = amc.getUserDivision() + " | " + amc.getContractName() + " | " +
+                                amc.getExistingPartner() + " | " + amc.getInitialCostUSD() + " | " +
+                                amc.getInitialCostLKR() + " | " + amc.getStartDate()+ " | " + amc.getEndDate()+ " | " +
+                                amc.getAmcValueUSD() + " | " + amc.getAmcValueLKR()+ " | " +
+                                amc.getAmcPercentageUponPurchasePrice() + " | " + amc.getCategory()+ " | " +
+                                amc.getUser().getUsername();
+
                         amcRepository.deleteById(id);
-                        log.info("Delete My AMC: AMC Contract Data Deleted - " + contractName);
+
+                        String afterName= "After version " + currentVersion;
+                        String filePathAfterUpdate = amcCsvConverter.generateCsvForAmc(afterName);
+                        String rowAfter = "";
+
+                        userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion);
+
+
+
+                        log.info("Delete My AMC: AMC Contract Data Deleted - " + amc.getContractName());
                         return new ResponseEntity<>("AMC Contract Deleted",HttpStatus.OK);
                     }
                     log.error("Delete My AMC: AMC Contract Not Found");

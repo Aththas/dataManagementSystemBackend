@@ -14,6 +14,8 @@ import java.util.Optional;
 public interface AmcRepository extends JpaRepository<Amc,Integer> {
     Optional<Amc> findByContractName(String contractName);
     Page<Amc> findAll(Pageable pageable);
+
+    List<Amc> findAllByOrderById();
     Page<Amc> findAllByUserId(Integer userId,Pageable pageable);
 
 }

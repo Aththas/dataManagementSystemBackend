@@ -10,8 +10,8 @@ public class ViewAmcDto {
     private String contractName;
     private String existingPartner;
     private String userDivision;
-    private double initialCostUSD;
-    private double initialCostLKR;
+    private long initialCostUSD;
+    private long initialCostLKR;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date startDate;
@@ -19,9 +19,9 @@ public class ViewAmcDto {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date endDate;
 
-    private double amcValueUSD;
-    private double amcValueLKR;
-    private double amcPercentageUponPurchasePrice;
+    private long amcValueUSD;
+    private long amcValueLKR;
+    private long amcPercentageUponPurchasePrice;
     private String category;
     private String user;
 }
