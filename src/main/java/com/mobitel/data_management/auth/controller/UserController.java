@@ -27,8 +27,9 @@ public class UserController {
     }
 
     @GetMapping("/viewUsers")
-    public ResponseEntity<?> viewUsers(){
-        return userService.viewUsers();
+    public ResponseEntity<?> viewUsers(@RequestParam int page, @RequestParam int size,
+                                       @RequestParam String sortBy, @RequestParam boolean ascending){
+        return userService.viewUsers(page, size, sortBy, ascending);
     }
 
     @PutMapping("/disableUser")

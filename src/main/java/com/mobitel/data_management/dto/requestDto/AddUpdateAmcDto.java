@@ -25,11 +25,11 @@ public class AddUpdateAmcDto {
 
     @Positive(message = "Initial cost in USD must be a positive number")
     @NotNull(message = "Invalid Initial Cost USD")
-    private double initialCostUSD;
+    private long initialCostUSD;
 
     @Positive(message = "Initial cost in LKR must be a positive number")
     @NotNull(message = "Invalid Initial Cost LKR")
-    private double initialCostLKR;
+    private long initialCostLKR;
 
     @NotNull(message = "Invalid Start Date")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -41,15 +41,15 @@ public class AddUpdateAmcDto {
 
     @Positive(message = "AMC Value USD must be a positive number")
     @NotNull(message = "Invalid AMC Value USD")
-    private double amcValueUSD;
+    private long amcValueUSD;
 
     @Positive(message = "AMC Value LKR must be a positive number")
     @NotNull(message = "Invalid AMC Value LKR")
-    private double amcValueLKR;
+    private long amcValueLKR;
 
     @Positive(message = "AMC Percentage Upon Purchase Price must be a positive number")
     @NotNull(message = "Invalid AMC Percentage Upon Purchase Price")
-    private double amcPercentageUponPurchasePrice;
+    private long amcPercentageUponPurchasePrice;
 
     @NotEmpty(message = "Empty Category")
     @NotNull(message = "Invalid Category")
