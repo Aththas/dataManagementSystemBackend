@@ -36,12 +36,8 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
         return optionalUser.orElse(null);
     }
     @Override
-    public void saveUserActivity(User user, String action, String filePathBeforeUpdate, String filePathAfterUpdate, String rowBefore, String rowAfter, Integer currentVersion) {
-        String description = "";
-        if(action.equals("delete")){
-            description = user.getEmail() + " Deleted a row";
-        }
-
+    public void saveUserActivity(User user, String action, String filePathBeforeUpdate, String filePathAfterUpdate,
+                                 String rowBefore, String rowAfter, Integer currentVersion,String description) {
         UserActivityAmc userActivityAmc = new UserActivityAmc();
         userActivityAmc.setVersion("version " + currentVersion);
         userActivityAmc.setAction(action);
