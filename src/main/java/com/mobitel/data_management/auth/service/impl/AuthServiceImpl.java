@@ -9,6 +9,7 @@ import com.mobitel.data_management.auth.repository.TokenRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.AuthService;
 import com.mobitel.data_management.config.JwtService;
+import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import com.mobitel.data_management.other.emailService.EmailService;
 import com.mobitel.data_management.other.otpService.OtpStorage;
 import com.mobitel.data_management.other.otpService.OtpUtil;
@@ -46,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
     private final ObjectValidator<NewPasswordDto> newPasswordValidator;
 
     @Override
-    public ResponseEntity<?> authentication(AuthDto authDto) {
+    public ResponseEntity<ApiResponse<?>> authentication(AuthDto authDto) {
         authenticationValidator.validate(authDto);
         if(authDto != null){
             try{
@@ -55,7 +56,9 @@ public class AuthServiceImpl implements AuthService {
                     if(authDto.getEmail().endsWith("null"))
                     {
                         log.error("Authentication: User Account has been restricted");
-                        return new ResponseEntity<>("User Account has been restricted, Contact Admin to get back",HttpStatus.OK);
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "User Account has been restricted, Contact Admin to get back", "AUTH_ERROR_002"),
+                                HttpStatus.OK);
                     }
                     authenticationManager.authenticate(
                             new UsernamePasswordAuthenticationToken(
@@ -75,26 +78,35 @@ public class AuthServiceImpl implements AuthService {
                     responseDto.setRefreshToken(refreshToken);
 
                     log.info("Authentication: Success - " + authDto.getEmail());
-                    return new ResponseEntity<>(responseDto,HttpStatus.OK);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(true, responseDto, "Authentication Success", null),
+                            HttpStatus.OK);
                 }
                 log.error("Authentication: Failed");
-                return new ResponseEntity<>("Authentication Failed", HttpStatus.OK);
+                return new ResponseEntity<>(new ApiResponse<>(false, null, "Authentication Failed", "AUTH_ERROR_001"),
+                        HttpStatus.OK);
             }catch (Exception e){
                 log.error("Authentication: " + e);
-                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
             log.error("Authentication: authDto object is null");
-            return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null Values Not Permitted", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
     @Override
-    public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<?>> refresh(HttpServletRequest request, HttpServletResponse response) {
         final String authHeader = request.getHeader("Authorization");
         if(authHeader == null || !authHeader.startsWith("Bearer ")){
             log.error("Refresh Token: Invalid Access Token Type");
-            return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Invalid Access Token Type", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
         final String jwt = authHeader.substring(7);
         final String userEmail = jwtService.extractUsername(jwt);
@@ -110,17 +122,23 @@ public class AuthServiceImpl implements AuthService {
                 responseDto.setRefreshToken(jwt);
 
                 log.info("Refresh Token: Generated - " + userEmail);
-                return new ResponseEntity<>(responseDto,HttpStatus.OK);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(true, responseDto, "Token Generated", null),
+                        HttpStatus.OK);
             }
             log.error("Refresh Token: Token Expired");
-            return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Token Expired", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
         log.error("Refresh Token: Invalid Access Token");
-        return new ResponseEntity<>("Invalid Token", HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(
+                new ApiResponse<>(false, null, "Invalid Access Token", "AUTH_ERROR_001"),
+                HttpStatus.UNAUTHORIZED);
     }
 
     @Override
-    public ResponseEntity<?> forgotPassword(ForgotPasswordDto forgotPasswordDto) {
+    public ResponseEntity<ApiResponse<?>> forgotPassword(ForgotPasswordDto forgotPasswordDto) {
         forgotPasswordValidator.validate(forgotPasswordDto);
         if(forgotPasswordDto != null){
             try{
@@ -129,29 +147,39 @@ public class AuthServiceImpl implements AuthService {
                     if(forgotPasswordDto.getEmail().endsWith("null"))
                     {
                         log.error("Forgot Password: User Account has been restricted");
-                        return new ResponseEntity<>("User Account has been restricted, Contact Admin to get back",HttpStatus.OK);
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "User Account has been restricted, Contact Admin to get back", "AUTH_ERROR_002"),
+                                HttpStatus.OK);
                     }
                     String otp = OtpUtil.generateOtp();
                     otpStorage.storeOtp(forgotPasswordDto.getEmail(), otp);
                     emailService.sendEmail(forgotPasswordDto.getEmail(), "Your OTP Code", "Your OTP code is: " + otp);
 
                     log.info("Forgot password: OTP send to email - " + forgotPasswordDto.getEmail());
-                    return new ResponseEntity<>("OTP sent to email " + forgotPasswordDto.getEmail(), HttpStatus.OK);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(true, null, "OTP sent to email " + forgotPasswordDto.getEmail(), null),
+                            HttpStatus.OK);
                 }
                 log.error("Forgot password: Invalid User Email");
-                return new ResponseEntity<>("Invalid User Email",HttpStatus.FORBIDDEN);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Invalid User Email", "EMAIL_ERROR_001"),
+                        HttpStatus.OK);
             }catch (Exception e){
                 log.error("Forgot password: " + e);
-                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
             log.error("Forgot password: forgotPasswordDto object is null");
-            return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null Values Not Permitted", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
     @Override
-    public ResponseEntity<?> verifyOtp(OtpDto otpDto) {
+    public ResponseEntity<ApiResponse<?>> verifyOtp(OtpDto otpDto) {
         otpValidator.validate(otpDto);
         if(otpDto != null){
             try{
@@ -160,22 +188,30 @@ public class AuthServiceImpl implements AuthService {
                     otpStorage.removeOtp(otpDto.getEmail());
 
                     log.info("Verify Otp: OTP Verified");
-                    return new ResponseEntity<>("OTP Verified", HttpStatus.OK);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(true, null, "OTP Verified", null),
+                            HttpStatus.OK);
                 }
                 log.error("Verify Otp: Invalid OTP");
-                return new ResponseEntity<>("Invalid OTP.", HttpStatus.OK);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Invalid OTP", "OTP_ERROR_001"),
+                        HttpStatus.OK);
             }catch (Exception e){
                 log.error(e.toString());
-                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
             log.error("Verify Otp: otpDto object is null");
-            return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null Values Not Permitted", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
     @Override
-    public ResponseEntity<?> newPassword(NewPasswordDto newPasswordDto) {
+    public ResponseEntity<ApiResponse<?>> newPassword(NewPasswordDto newPasswordDto) {
         newPasswordValidator.validate(newPasswordDto);
         if(newPasswordDto != null){
             try{
@@ -184,7 +220,9 @@ public class AuthServiceImpl implements AuthService {
 
                     if (!newPasswordDto.getNewPassword().equals(newPasswordDto.getConfirmPassword())) {
                         log.error("New Password: Password Confirmation Error");
-                        return new ResponseEntity<>("Password Confirmation Error", HttpStatus.OK);
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Password Confirmation Error", "AUTH_ERROR_003"),
+                                HttpStatus.OK);
                     }
 
                     User user = optionalUser.get();
@@ -192,17 +230,25 @@ public class AuthServiceImpl implements AuthService {
                     userRepository.save(user);
 
                     log.info("New Password: Password Updated for user " + user.getEmail());
-                    return new ResponseEntity<>("Password Update Successfully",HttpStatus.OK);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(true, null, "Password Updated", null),
+                            HttpStatus.OK);
                 }
                 log.error("New Password: Invalid User");
-                return new ResponseEntity<>("Invalid User",HttpStatus.FORBIDDEN);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Invalid User", "AUTH_ERROR_001"),
+                        HttpStatus.FORBIDDEN);
             }catch (Exception e){
                 log.error("New Password: " + e);
-                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
             log.error("New Password: newPasswordDto object is null");
-            return new ResponseEntity<>("Null Values Not Permitted",HttpStatus.OK);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null Values Not Permitted", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
         }
 
     }

@@ -2,6 +2,7 @@ package com.mobitel.data_management.auth.controller;
 
 import com.mobitel.data_management.auth.dto.requestDto.*;
 import com.mobitel.data_management.auth.service.AuthService;
+import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,27 +18,27 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> authentication(@RequestBody AuthDto authDto){
+    public ResponseEntity<ApiResponse<?>> authentication(@RequestBody AuthDto authDto){
         return authService.authentication(authDto);
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refresh(HttpServletRequest request,HttpServletResponse response){
+    public ResponseEntity<ApiResponse<?>> refresh(HttpServletRequest request,HttpServletResponse response){
         return authService.refresh(request,response);
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordDto forgotPasswordDto){
+    public ResponseEntity<ApiResponse<?>> forgotPassword(@RequestBody ForgotPasswordDto forgotPasswordDto){
         return authService.forgotPassword(forgotPasswordDto);
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<?> verifyOtp(@RequestBody OtpDto otpDto){
+    public ResponseEntity<ApiResponse<?>> verifyOtp(@RequestBody OtpDto otpDto){
         return authService.verifyOtp(otpDto);
     }
 
     @PostMapping("/new-password")
-    public ResponseEntity<?> newPassword(@RequestBody NewPasswordDto newPasswordDto){
+    public ResponseEntity<ApiResponse<?>> newPassword(@RequestBody NewPasswordDto newPasswordDto){
         return authService.newPassword(newPasswordDto);
     }
 }
