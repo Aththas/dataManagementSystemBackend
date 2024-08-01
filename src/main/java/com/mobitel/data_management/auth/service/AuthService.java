@@ -1,19 +1,20 @@
 package com.mobitel.data_management.auth.service;
 
 import com.mobitel.data_management.auth.dto.requestDto.*;
+import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface AuthService {
 
-    ResponseEntity<?> authentication(AuthDto authDto);
+    ResponseEntity<ApiResponse<?>> authentication(AuthDto authDto);
 
-    ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response);
+    ResponseEntity<ApiResponse<?>> refresh(HttpServletRequest request, HttpServletResponse response);
 
-    ResponseEntity<?> forgotPassword(ForgotPasswordDto forgotPasswordDto);
+    ResponseEntity<ApiResponse<?>> forgotPassword(ForgotPasswordDto forgotPasswordDto);
 
-    ResponseEntity<?> verifyOtp(OtpDto otpDto);
+    ResponseEntity<ApiResponse<?>> verifyOtp(OtpDto otpDto);
 
-    ResponseEntity<?> newPassword(NewPasswordDto newPasswordDto);
+    ResponseEntity<ApiResponse<?>> newPassword(NewPasswordDto newPasswordDto);
 }

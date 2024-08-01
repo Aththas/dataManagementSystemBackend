@@ -4,6 +4,7 @@ import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.dto.requestDto.AddUpdateAmcDto;
 import com.mobitel.data_management.entity.Amc;
+import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import com.mobitel.data_management.other.csvService.AmcCsvConverter;
 import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
 import com.mobitel.data_management.other.mapper.AmcMapper;
@@ -45,7 +46,7 @@ public class AmcServiceImpl implements AmcService {
         return optionalUser.orElse(null);
     }
     @Override
-    public ResponseEntity<String> addAmc(AddUpdateAmcDto addUpdateAmcDto) {
+    public ResponseEntity<ApiResponse<?>> addAmc(AddUpdateAmcDto addUpdateAmcDto) {
         User user = getCurrentUser();
         if(user != null){
             addAmcObjectValidator.validate(addUpdateAmcDto);
@@ -54,7 +55,9 @@ public class AmcServiceImpl implements AmcService {
                     Optional<Amc> optionalAmc = amcRepository.findByContractName(addUpdateAmcDto.getContractName());
                     if(optionalAmc.isPresent()){
                         log.error("AMC Contract Add: Contract Name Already Exist");
-                        return new ResponseEntity<>("Contract Name Already Exist",HttpStatus.OK);
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Contract Name Already Exist", "AMC_ERROR_001"),
+                                HttpStatus.OK);
                     }
 
                     String action = "add";
@@ -81,23 +84,32 @@ public class AmcServiceImpl implements AmcService {
                     userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion, description);
 
                     log.info("AMC Contract Add: Success");
-                    return new ResponseEntity<>("AMC Contractor Added",HttpStatus.CREATED);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(true, null, "AMC Contract Added", null),
+                            HttpStatus.OK);
                 }catch (Exception e){
                     log.error("AMC Contract Add: " + e);
-                    return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                            HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }else{
                 log.error("AMC Contract Add: addUpdateAmcDto object is null");
-                return new ResponseEntity<>("Null values are not permitted", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Null Values Not Permitted", "NULL_ERROR_100"),
+                        HttpStatus.BAD_REQUEST);
             }
         }else{
             log.error("AMC Contract Add: Unauthorized Access");
-            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
+
         }
     }
 
     @Override
-    public ResponseEntity<String> updateAmc(Integer id, AddUpdateAmcDto addUpdateAmcDto) {
+    public ResponseEntity<ApiResponse<?>> updateAmc(Integer id, AddUpdateAmcDto addUpdateAmcDto) {
         User user = getCurrentUser();
         if(user != null){
             if(id != null){
@@ -140,53 +152,75 @@ public class AmcServiceImpl implements AmcService {
 
 
                                 log.info("AMC Contract Update: Success");
-                                return new ResponseEntity<>("AMC Contractor Updated",HttpStatus.OK);
+                                return new ResponseEntity<>(
+                                        new ApiResponse<>(true, null, "AMC Contract Updated", null),
+                                        HttpStatus.OK);
                             }
                             log.info("AMC Contract Update: Nothing is changed");
-                            return new ResponseEntity<>("Nothing is changed",HttpStatus.OK);
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "No changes Found", "AMC_ERROR_001"),
+                                    HttpStatus.OK);
                         }
                         log.error("AMC Contract Update: AMC Contract Not Found");
-                        return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
+                                HttpStatus.OK);
                     }catch (Exception e){
                         log.error("AMC Contract Update: " + e);
-                        return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                                HttpStatus.INTERNAL_SERVER_ERROR);
                     }
                 }
                 log.error("AMC Contract Update: addUpdateAmcDto object is null");
-                return new ResponseEntity<>("Null values are not permitted", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Null Values Not Permitted", "NULL_ERROR_100"),
+                        HttpStatus.BAD_REQUEST);
             }
             log.error("AMC Contract Update: Null User ID");
-            return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
         }else{
             log.error("AMC Contract Update: Unauthorized Access");
-            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 
     @Override
-    public ResponseEntity<?> viewAmc(Integer id) {
+    public ResponseEntity<ApiResponse<?>> viewAmc(Integer id) {
         if(id != null){
             try{
                 Optional<Amc> optionalAmc = amcRepository.findById(id);
                 if(optionalAmc.isPresent()){
                     Amc amc = optionalAmc.get();
                     log.info("View AMC: AMC Contract Data Retrieved - " + amc.getContractName());
-                    return new ResponseEntity<>(amcMapper.userViewMapper(amc),HttpStatus.OK);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(true, amcMapper.userViewMapper(amc), "AMC Contract Data Retrieved - " + amc.getContractName(), null),
+                            HttpStatus.OK);
                 }
                 log.error("View AMC: AMC Contract Not Found");
-                return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
+                        HttpStatus.OK);
             }catch (Exception e){
                 log.error("View AMC: " + e);
-                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
             log.error("View AMC: Null User ID");
-            return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
     @Override
-    public ResponseEntity<?> viewAllAmc(int page, int size, String sortBy, boolean ascending) {
+    public ResponseEntity<ApiResponse<?>> viewAllAmc(int page, int size, String sortBy, boolean ascending) {
         try{
             // Create a Sort object based on the sortBy parameter and direction
             Sort sort = Sort.by(sortBy);
@@ -200,19 +234,25 @@ public class AmcServiceImpl implements AmcService {
 
             if(amcList.isEmpty()){
                 log.error("View All AMC: Empty List");
-                return new ResponseEntity<>("Empty List",HttpStatus.OK);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                        HttpStatus.OK);
             }
             log.info("View All AMC: Listed All AMC List");
-            return new ResponseEntity<>(amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(true, amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), "Listed All AMC List", null),
+                    HttpStatus.OK);
 
         }catch(Exception e){
             log.error("View All AMC: " + e);
-            return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
-    public ResponseEntity<?> viewMyAmc(Integer id) {
+    public ResponseEntity<ApiResponse<?>> viewMyAmc(Integer id) {
         User user = getCurrentUser();
         if(user != null){
             if(id != null){
@@ -221,53 +261,77 @@ public class AmcServiceImpl implements AmcService {
                     if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
                         Amc amc = optionalAmc.get();
                         log.info("View My AMC: AMC Contract Data Retrieved - " + amc.getContractName());
-                        return new ResponseEntity<>(amcMapper.userViewMapper(amc),HttpStatus.OK);
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(true, amcMapper.userViewMapper(amc), "AMC Contract Data Retrieved - " + amc.getContractName(), null),
+                                HttpStatus.OK);
                     }
                     log.error("View My AMC: AMC Contract Not Found");
-                    return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
+                            HttpStatus.OK);
                 }catch (Exception e){
                     log.error("View My AMC: " + e);
-                    return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                            HttpStatus.INTERNAL_SERVER_ERROR);
+
                 }
             }else{
                 log.error("View My AMC: Null User ID");
-                return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                        HttpStatus.BAD_REQUEST);
             }
         }else{
             log.error("View My AMC: Unauthorized Access");
-            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 
     @Override
-    public ResponseEntity<?> viewAllMyAmc(int page, int size, String sortBy, boolean ascending) {
+    public ResponseEntity<ApiResponse<?>> viewAllMyAmc(int page, int size, String sortBy, boolean ascending) {
         User user = getCurrentUser();
         if(user != null){
-            // Create a Sort object based on the sortBy parameter and direction
-            Sort sort = Sort.by(sortBy);
-            sort = ascending ? sort.ascending() : sort.descending();
+            try{
+                // Create a Sort object based on the sortBy parameter and direction
+                Sort sort = Sort.by(sortBy);
+                sort = ascending ? sort.ascending() : sort.descending();
 
-            // Create a Pageable object with the provided page, size, and sort
-            Pageable pageable = PageRequest.of(page, size, sort);
+                // Create a Pageable object with the provided page, size, and sort
+                Pageable pageable = PageRequest.of(page, size, sort);
 
-            // Retrieve the paginated and sorted results
-            Page<Amc> amcList = amcRepository.findAllByUserId(user.getId(), pageable);
+                // Retrieve the paginated and sorted results
+                Page<Amc> amcList = amcRepository.findAllByUserId(user.getId(), pageable);
 
-            if(amcList.isEmpty()){
-                log.error("View All My AMC: Empty List");
-                return new ResponseEntity<>("Empty List",HttpStatus.OK);
+                if(amcList.isEmpty()){
+                    log.error("View All My AMC: Empty List");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                            HttpStatus.OK);
+                }
+                log.info("View All My AMC: Listed All My AMC List");
+                return new ResponseEntity<>(
+                        new ApiResponse<>(true, amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), "Listed All AMC List", null),
+                        HttpStatus.OK);
+
+            }catch (Exception e){
+                log.error("View All My AMC: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
-            log.info("View All My AMC: Listed All My AMC List");
-            return new ResponseEntity<>(amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), HttpStatus.OK);
-
         }else{
             log.error("View All My AMC: Unauthorized Access");
-            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 
     @Override
-    public ResponseEntity<?> deleteMyAmc(Integer id) {
+    public ResponseEntity<ApiResponse<?>> deleteMyAmc(Integer id) {
         User user = getCurrentUser();
         if(user != null){
             if(id != null){
@@ -297,22 +361,32 @@ public class AmcServiceImpl implements AmcService {
                         userActivityAmcService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion,description);
 
                         log.info("Delete My AMC: AMC Contract Data Deleted - " + amc.getContractName());
-                        return new ResponseEntity<>("AMC Contract Deleted",HttpStatus.OK);
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(true, null, "AMC Contract Deleted", null),
+                                HttpStatus.OK);
                     }
                     log.error("Delete My AMC: AMC Contract Not Found");
-                    return new ResponseEntity<>("AMC Contract Not Found",HttpStatus.OK);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
+                            HttpStatus.OK);
                 }catch (Exception e){
                     log.error("Delete My AMC: " + e);
-                    return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                            HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             }else{
                 log.error("Delete My AMC: Null User ID");
-                return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                        HttpStatus.BAD_REQUEST);
             }
         }else
         {
             log.error("Delete My AMC: Unauthorized Access");
-            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 

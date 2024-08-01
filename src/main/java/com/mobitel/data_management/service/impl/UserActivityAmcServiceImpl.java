@@ -4,6 +4,7 @@ import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.entity.UserActivityAmc;
+import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import com.mobitel.data_management.other.mapper.UserActivityAmcMapper;
 import com.mobitel.data_management.repository.UserActivityAmcRepository;
 import com.mobitel.data_management.service.AmcService;
@@ -51,7 +52,7 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
     }
 
     @Override
-    public ResponseEntity<?> viewAllActivities(int page, int size, String sortBy, boolean ascending) {
+    public ResponseEntity<ApiResponse<?>> viewAllActivities(int page, int size, String sortBy, boolean ascending) {
         try{
             // Create a Sort object based on the sortBy parameter and direction
             Sort sort = Sort.by(sortBy);
@@ -64,15 +65,20 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
 
             if(userActivityAmcList.isEmpty()){
                 log.error("View All Activities: Empty List");
-                return new ResponseEntity<>("Empty List",HttpStatus.OK);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                        HttpStatus.OK);
             }
             log.info("View All Activities: Listed All Activities List");
-            return new ResponseEntity<>(userActivityAmcList.stream().map(userActivityAmcMapper::userActivityViewMapper).collect(Collectors.toList()), HttpStatus.OK);
-
+            return new ResponseEntity<>(
+                    new ApiResponse<>(true, userActivityAmcList.stream().map(userActivityAmcMapper::userActivityViewMapper).collect(Collectors.toList()), "Listed All Activities List", null),
+                    HttpStatus.OK);
 
         }catch (Exception e){
             log.error("View All Activities: " + e);
-            return new ResponseEntity<>("Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -86,51 +92,71 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
     }
 
     @Override
-    public ResponseEntity<?> viewAllMyActivities(int page, int size, String sortBy, boolean ascending) {
+    public ResponseEntity<ApiResponse<?>> viewAllMyActivities(int page, int size, String sortBy, boolean ascending) {
         User user = getCurrentUser();
         if(user != null){
-            // Create a Sort object based on the sortBy parameter and direction
-            Sort sort = Sort.by(sortBy);
-            sort = ascending ? sort.ascending() : sort.descending();
+            try{
+                // Create a Sort object based on the sortBy parameter and direction
+                Sort sort = Sort.by(sortBy);
+                sort = ascending ? sort.ascending() : sort.descending();
 
-            // Create a Pageable object with the provided page, size, and sort
-            Pageable pageable = PageRequest.of(page, size, sort);
+                // Create a Pageable object with the provided page, size, and sort
+                Pageable pageable = PageRequest.of(page, size, sort);
 
-            // Retrieve the paginated and sorted results
-            Page<UserActivityAmc> userActivityAmcList = userActivityAmcRepository.findAllByUserId(user.getId(),pageable);
+                // Retrieve the paginated and sorted results
+                Page<UserActivityAmc> userActivityAmcList = userActivityAmcRepository.findAllByUserId(user.getId(),pageable);
 
-            if(userActivityAmcList.isEmpty()){
-                log.error("View All My Activities: Empty List");
-                return new ResponseEntity<>("Empty List",HttpStatus.OK);
+                if(userActivityAmcList.isEmpty()){
+                    log.error("View All My Activities: Empty List");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                            HttpStatus.OK);
+                }
+                log.info("View All My Activities: Listed All My Activities List");
+                return new ResponseEntity<>(
+                        new ApiResponse<>(true, userActivityAmcList.stream().map(userActivityAmcMapper::userActivityViewMapper).collect(Collectors.toList()), "Listed All My Activities List", null),
+                        HttpStatus.OK);
+            }catch (Exception e){
+                log.error("View All My Activities: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
-            log.info("View All My Activities: Listed All My Activities List");
-            return new ResponseEntity<>(userActivityAmcList.stream().map(userActivityAmcMapper::userActivityViewMapper).collect(Collectors.toList()), HttpStatus.OK);
-
         }else{
             log.error("View All My Activities: Unauthorized Access");
-            return new ResponseEntity<>("Unauthorized Access", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Invalid Authentication", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 
     @Override
-    public ResponseEntity<?> viewActivity(Integer id) {
+    public ResponseEntity<ApiResponse<?>> viewActivity(Integer id) {
         if(id != null){
             try{
                 Optional<UserActivityAmc> optionalUserActivityAmc = userActivityAmcRepository.findById(id);
                 if(optionalUserActivityAmc.isPresent()){
                     UserActivityAmc userActivityAmc = optionalUserActivityAmc.get();
                     log.info("View Activity: User Activity Data Retrieved - " + userActivityAmc.getVersion());
-                    return new ResponseEntity<>(userActivityAmcMapper.userSingleActivityViewMapper(userActivityAmc),HttpStatus.OK);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(true, userActivityAmcMapper.userSingleActivityViewMapper(userActivityAmc), "User Activity Data Retrieved", null),
+                            HttpStatus.OK);
                 }
                 log.error("View Activity: User Activity Not Found");
-                return new ResponseEntity<>("User Activity Not Found",HttpStatus.OK);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "User Activity Not Found", "EMPTY_ERROR_001"),
+                        HttpStatus.OK);
             }catch (Exception e){
-                log.error("Activity AMC: " + e);
-                return new ResponseEntity<>("Server Error",HttpStatus.INTERNAL_SERVER_ERROR);
+                log.error("Activity Activity: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
             log.error("View Activity: Null User ID");
-            return new ResponseEntity<>("Null User ID",HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
         }
     }
 }
