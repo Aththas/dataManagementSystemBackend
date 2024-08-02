@@ -12,4 +12,5 @@ public class ViewSingleUserActivityAmcDto {
     private String user;
     private String rowBefore;
     private String rowAfter;
+    private String dateTime;
 }

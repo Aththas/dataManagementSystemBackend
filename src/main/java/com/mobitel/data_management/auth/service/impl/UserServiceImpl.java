@@ -176,6 +176,8 @@ public class UserServiceImpl implements UserService {
 
             // Retrieve the paginated and sorted results
             Page<User> users = userRepository.findAll(pageable);
+            List<User> countUsers = userRepository.findAll();
+            int totalUsers = countUsers.size();
             if(users.isEmpty()){
                 log.error("View Users: Empty User List");
                 return new ResponseEntity<>(
@@ -184,7 +186,7 @@ public class UserServiceImpl implements UserService {
             }
             log.info("View Users: User Data Retrieved");
             return new ResponseEntity<>(
-                    new ApiResponse<>(true, users.stream().map(userMapper::userViewMapper).collect(Collectors.toList()), "Users Data Retrieved", null),
+                    new ApiResponse<>(true, users.stream().map(userMapper::userViewMapper).collect(Collectors.toList()), Integer.toString(totalUsers), null),
                     HttpStatus.OK);
         } catch (Exception e){
             log.error("View Users: " + e);

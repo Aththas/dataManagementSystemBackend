@@ -8,11 +8,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface UserActivityAmcRepository extends JpaRepository<UserActivityAmc,Integer> {
     Page<UserActivityAmc> findAll(Pageable pageable);
 
     Page<UserActivityAmc> findAllByUserId(Integer userId, Pageable pageable);
+    List<UserActivityAmc> findAllByUserId(Integer userId);
     @Query("SELECT MAX(id) FROM UserActivityAmc")
     Integer findLastId();
 }

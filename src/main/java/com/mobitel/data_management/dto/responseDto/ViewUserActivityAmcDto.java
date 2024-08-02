@@ -4,10 +4,11 @@ import lombok.Data;
 
 @Data
 public class ViewUserActivityAmcDto {
+    private Integer id;
     private String version;
     private String action;
-    private String description;
     private String beforeFile;
     private String afterFile;
     private String user;
+    private String dateTime;
 }

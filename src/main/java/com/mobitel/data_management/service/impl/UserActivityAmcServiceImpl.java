@@ -20,6 +20,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,6 +42,10 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
     @Override
     public void saveUserActivity(User user, String action, String filePathBeforeUpdate, String filePathAfterUpdate,
                                  String rowBefore, String rowAfter, Integer currentVersion,String description) {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        String formattedDate = now.format(formatter);
+
         UserActivityAmc userActivityAmc = new UserActivityAmc();
         userActivityAmc.setVersion("version " + currentVersion);
         userActivityAmc.setAction(action);
@@ -48,6 +55,7 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
         userActivityAmc.setAfterFile(filePathAfterUpdate);
         userActivityAmc.setRowBefore(rowBefore);
         userActivityAmc.setRowAfter(rowAfter);
+        userActivityAmc.setDateTime(formattedDate);
         userActivityAmcRepository.save(userActivityAmc);
     }
 
@@ -62,7 +70,8 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Page<UserActivityAmc> userActivityAmcList = userActivityAmcRepository.findAll(pageable);
-
+            List<UserActivityAmc> userActivityAmcListCount = userActivityAmcRepository.findAll();
+            int count = userActivityAmcListCount.size();
             if(userActivityAmcList.isEmpty()){
                 log.error("View All Activities: Empty List");
                 return new ResponseEntity<>(
@@ -71,7 +80,7 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
             }
             log.info("View All Activities: Listed All Activities List");
             return new ResponseEntity<>(
-                    new ApiResponse<>(true, userActivityAmcList.stream().map(userActivityAmcMapper::userActivityViewMapper).collect(Collectors.toList()), "Listed All Activities List", null),
+                    new ApiResponse<>(true, userActivityAmcList.stream().map(userActivityAmcMapper::userActivityViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
                     HttpStatus.OK);
 
         }catch (Exception e){
@@ -105,7 +114,8 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
 
                 // Retrieve the paginated and sorted results
                 Page<UserActivityAmc> userActivityAmcList = userActivityAmcRepository.findAllByUserId(user.getId(),pageable);
-
+                List<UserActivityAmc> userActivityAmcListCount = userActivityAmcRepository.findAllByUserId(user.getId());
+                int count = userActivityAmcListCount.size();
                 if(userActivityAmcList.isEmpty()){
                     log.error("View All My Activities: Empty List");
                     return new ResponseEntity<>(
@@ -114,7 +124,7 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
                 }
                 log.info("View All My Activities: Listed All My Activities List");
                 return new ResponseEntity<>(
-                        new ApiResponse<>(true, userActivityAmcList.stream().map(userActivityAmcMapper::userActivityViewMapper).collect(Collectors.toList()), "Listed All My Activities List", null),
+                        new ApiResponse<>(true, userActivityAmcList.stream().map(userActivityAmcMapper::userActivityViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
                         HttpStatus.OK);
             }catch (Exception e){
                 log.error("View All My Activities: " + e);

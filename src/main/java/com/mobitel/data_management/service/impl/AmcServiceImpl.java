@@ -24,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -231,6 +232,8 @@ public class AmcServiceImpl implements AmcService {
 
             // Retrieve the paginated and sorted results
             Page<Amc> amcList = amcRepository.findAll(pageable);
+            List<Amc> amcListCount = amcRepository.findAll();
+            int count = amcListCount.size();
 
             if(amcList.isEmpty()){
                 log.error("View All AMC: Empty List");
@@ -240,7 +243,7 @@ public class AmcServiceImpl implements AmcService {
             }
             log.info("View All AMC: Listed All AMC List");
             return new ResponseEntity<>(
-                    new ApiResponse<>(true, amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), "Listed All AMC List", null),
+                    new ApiResponse<>(true, amcList.stream().map(amcMapper::allUsersViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
                     HttpStatus.OK);
 
         }catch(Exception e){
@@ -304,6 +307,8 @@ public class AmcServiceImpl implements AmcService {
 
                 // Retrieve the paginated and sorted results
                 Page<Amc> amcList = amcRepository.findAllByUserId(user.getId(), pageable);
+                List<Amc> amcListCount = amcRepository.findAllByUserId(user.getId());
+                int count = amcListCount.size();
 
                 if(amcList.isEmpty()){
                     log.error("View All My AMC: Empty List");
@@ -313,7 +318,7 @@ public class AmcServiceImpl implements AmcService {
                 }
                 log.info("View All My AMC: Listed All My AMC List");
                 return new ResponseEntity<>(
-                        new ApiResponse<>(true, amcList.stream().map(amcMapper::userViewMapper).collect(Collectors.toList()), "Listed All AMC List", null),
+                        new ApiResponse<>(true, amcList.stream().map(amcMapper::allUsersViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
                         HttpStatus.OK);
 
             }catch (Exception e){

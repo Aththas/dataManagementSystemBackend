@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -77,13 +78,18 @@ public class AuthServiceImpl implements AuthService {
                     responseDto.setAccessToken(accessToken);
                     responseDto.setRefreshToken(refreshToken);
 
-                    log.info("Authentication: Success - " + authDto.getEmail());
+                    log.info("Authentication: Success - " + authDto.getEmail() + " - " +user.getRole().name());
                     return new ResponseEntity<>(
-                            new ApiResponse<>(true, responseDto, "Authentication Success", null),
+                            new ApiResponse<>(true, responseDto, user.getRole().name(), null),
                             HttpStatus.OK);
                 }
                 log.error("Authentication: Failed");
-                return new ResponseEntity<>(new ApiResponse<>(false, null, "Authentication Failed", "AUTH_ERROR_001"),
+                return new ResponseEntity<>(new ApiResponse<>(false, null, "username or password incorrect", "AUTH_ERROR_001"),
+                        HttpStatus.OK);
+            }catch (BadCredentialsException e){
+                log.error("Authentication: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "username or password incorrect", "CREDENTIAL_ERROR_500"),
                         HttpStatus.OK);
             }catch (Exception e){
                 log.error("Authentication: " + e);
@@ -251,6 +257,37 @@ public class AuthServiceImpl implements AuthService {
                     HttpStatus.BAD_REQUEST);
         }
 
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<?>> userInfo(HttpServletRequest request, HttpServletResponse response) {
+        final String authHeader = request.getHeader("Authorization");
+        if(authHeader == null || !authHeader.startsWith("Bearer ")){
+            log.error("User Details: Invalid Access Token Type");
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Invalid Access Token Type", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
+        }
+        final String jwt = authHeader.substring(7);
+        final String userEmail = jwtService.extractUsername(jwt);
+        if(userEmail != null){
+            User user = userRepository.findByEmail(userEmail).orElseThrow(()-> new UsernameNotFoundException("User Not Found"));
+            if(jwtService.isTokenValid(jwt,user) && jwtService.isTokenNotRevoked(jwt)){
+
+                log.info("User Details: Found for - " + userEmail);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(true, user, "User Found", null),
+                        HttpStatus.OK);
+            }
+            log.error("User Details: Token Expired");
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Token Expired", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
+        }
+        log.error("User Details: Invalid Access Token");
+        return new ResponseEntity<>(
+                new ApiResponse<>(false, null, "Invalid Access Token", "AUTH_ERROR_001"),
+                HttpStatus.UNAUTHORIZED);
     }
 
     private void saveToken(String accessToken, User user) {

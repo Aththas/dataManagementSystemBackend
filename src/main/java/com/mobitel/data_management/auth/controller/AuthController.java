@@ -41,4 +41,9 @@ public class AuthController {
     public ResponseEntity<ApiResponse<?>> newPassword(@RequestBody NewPasswordDto newPasswordDto){
         return authService.newPassword(newPasswordDto);
     }
+
+    @GetMapping("/user-info")
+    public ResponseEntity<ApiResponse<?>> userInfo(HttpServletRequest request, HttpServletResponse response){
+        return  authService.userInfo(request,response);
+    }
 }

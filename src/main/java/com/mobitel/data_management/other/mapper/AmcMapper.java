@@ -1,6 +1,7 @@
 package com.mobitel.data_management.other.mapper;
 
 import com.mobitel.data_management.dto.requestDto.AddUpdateAmcDto;
+import com.mobitel.data_management.dto.responseDto.ViewAllAmcDto;
 import com.mobitel.data_management.dto.responseDto.ViewAmcDto;
 import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
@@ -99,6 +100,20 @@ public class AmcMapper {
         viewAmcDto.setAmcValueUSD(amc.getAmcValueUSD());
         viewAmcDto.setAmcValueLKR(amc.getAmcValueLKR());
         viewAmcDto.setAmcPercentageUponPurchasePrice(amc.getAmcPercentageUponPurchasePrice());
+        viewAmcDto.setCategory(amc.getCategory());
+        viewAmcDto.setUser(amc.getUser().getUsername());
+        return viewAmcDto;
+    }
+
+    public ViewAllAmcDto allUsersViewMapper(Amc amc) {
+        ViewAllAmcDto viewAmcDto = new ViewAllAmcDto();
+        viewAmcDto.setId(amc.getId());
+        viewAmcDto.setUserDivision(amc.getUserDivision());
+        viewAmcDto.setContractName(amc.getContractName());
+        viewAmcDto.setInitialCostUSD(amc.getInitialCostUSD());
+        viewAmcDto.setInitialCostLKR(amc.getInitialCostLKR());
+        viewAmcDto.setStartDate(amc.getStartDate());
+        viewAmcDto.setEndDate(amc.getEndDate());
         viewAmcDto.setCategory(amc.getCategory());
         viewAmcDto.setUser(amc.getUser().getUsername());
         return viewAmcDto;
