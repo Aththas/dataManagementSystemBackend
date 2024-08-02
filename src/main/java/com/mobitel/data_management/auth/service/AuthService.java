@@ -17,4 +17,6 @@ public interface AuthService {
     ResponseEntity<ApiResponse<?>> verifyOtp(OtpDto otpDto);
 
     ResponseEntity<ApiResponse<?>> newPassword(NewPasswordDto newPasswordDto);
+
+    ResponseEntity<ApiResponse<?>> userInfo(HttpServletRequest request, HttpServletResponse response);
 }

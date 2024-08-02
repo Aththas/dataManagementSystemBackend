@@ -21,6 +21,7 @@ public class UserActivityAmc {
     private String afterFile;
     private String rowBefore;
     private String rowAfter;
+    private String dateTime;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

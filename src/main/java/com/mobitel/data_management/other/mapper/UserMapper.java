@@ -9,6 +9,7 @@ public class UserMapper {
 
     public ViewUserDto userViewMapper(User user){
         ViewUserDto userDto = new ViewUserDto();
+        userDto.setId(user.getId());
         userDto.setFirstname(user.getFirstname());
         userDto.setLastname(user.getLastname());
         userDto.setEmail(user.getEmail());

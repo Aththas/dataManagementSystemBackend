@@ -17,5 +17,6 @@ public interface AmcRepository extends JpaRepository<Amc,Integer> {
 
     List<Amc> findAllByOrderById();
     Page<Amc> findAllByUserId(Integer userId,Pageable pageable);
+    List<Amc> findAllByUserId(Integer userId);
 
 }
