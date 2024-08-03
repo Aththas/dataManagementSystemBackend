@@ -57,10 +57,10 @@ public class AmcCsvConverter {
             }
         }
 
-        String baseURL = "C:\\Assignments_and_Notes\\9. springboot\\Mobitel\\data_management";
-        String filePath = "src/main/resources/CSV-Files/"+ name +".csv";
+        String baseURL = "http://localhost:8090/CSV-Files/amc/"+ name +".csv";
+        String filePath = "src/main/resources/static/CSV-Files/amc/"+ name +".csv";
         Files.write(Paths.get(filePath), outputStream.toByteArray());
 
-        return Paths.get(baseURL, filePath).toString();
+        return baseURL;
     }
 }
