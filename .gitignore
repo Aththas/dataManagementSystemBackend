@@ -4,7 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 logs
-src/main/resources/CSV-Files
+CSV-Files/
 ### STS ###
 .apt_generated
 .classpath

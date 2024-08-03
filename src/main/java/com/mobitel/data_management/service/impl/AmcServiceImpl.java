@@ -73,7 +73,7 @@ public class AmcServiceImpl implements AmcService {
                     amc.setUser(user);
                     amcRepository.save(amcMapper.addUpdateAmcMapper(amc,addUpdateAmcDto));
 
-                    String afterName= "After version " + currentVersion;
+                    String afterName= "after version " + currentVersion;
                     String filePathAfterUpdate = amcCsvConverter.generateCsvForAmc(afterName);
                     String rowAfter = amc.getUserDivision() + " | " + amc.getContractName() + " | " +
                             amc.getExistingPartner() + " | " + amc.getInitialCostUSD() + " | " +
@@ -140,7 +140,7 @@ public class AmcServiceImpl implements AmcService {
 
                                 amcRepository.save(amcMapper.addUpdateAmcMapper(amc,addUpdateAmcDto));
 
-                                String afterName= "After version " + currentVersion;
+                                String afterName= "after version " + currentVersion;
                                 String filePathAfterUpdate = amcCsvConverter.generateCsvForAmc(afterName);
                                 String rowAfter = amc.getUserDivision() + " | " + amc.getContractName() + " | " +
                                         amc.getExistingPartner() + " | " + amc.getInitialCostUSD() + " | " +
@@ -359,7 +359,7 @@ public class AmcServiceImpl implements AmcService {
 
                         amcRepository.deleteById(id);
 
-                        String afterName= "After version " + currentVersion;
+                        String afterName= "after version " + currentVersion;
                         String filePathAfterUpdate = amcCsvConverter.generateCsvForAmc(afterName);
                         String rowAfter = "";
 
