@@ -25,8 +25,6 @@ public class UserActivityAmcMapper {
         viewUserActivityAmcDto.setAction(userActivityAmc.getAction());
         viewUserActivityAmcDto.setVersion(userActivityAmc.getVersion());
         viewUserActivityAmcDto.setDescription(userActivityAmc.getDescription());
-        viewUserActivityAmcDto.setAfterFile(userActivityAmc.getAfterFile());
-        viewUserActivityAmcDto.setBeforeFile(userActivityAmc.getBeforeFile());
         viewUserActivityAmcDto.setRowBefore(userActivityAmc.getRowBefore());
         viewUserActivityAmcDto.setRowAfter(userActivityAmc.getRowAfter());
         viewUserActivityAmcDto.setDateTime(userActivityAmc.getDateTime());
