@@ -34,50 +34,50 @@ public class AmcMapper {
     public String getUpdateDescription(Amc amc, AddUpdateAmcDto addUpdateAmcDto) {
         String formattedAmcStartDateString = dateFormatConverter.convertDateFormat(String.valueOf(amc.getStartDate()));
         String formattedAmcEndDateString = dateFormatConverter.convertDateFormat(String.valueOf(amc.getEndDate()));
-        String description = "These fields are changed: ";
+        String description = "These fields are changed: \n";
         int changeCount = 0;
         if(!amc.getUserDivision().equals(addUpdateAmcDto.getUserDivision())){
-            description = description + "User Division updated from " + amc.getUserDivision() + " to " +addUpdateAmcDto.getUserDivision() + ", ";
+            description = description + (changeCount+1) +". User Division updated from '" + amc.getUserDivision() + "' to '" +addUpdateAmcDto.getUserDivision() + "'\n";
             changeCount++;
         }
         if(!amc.getContractName().equals(addUpdateAmcDto.getContractName())){
-            description = description + "Contract name updated from " + amc.getContractName() + " to " +addUpdateAmcDto.getContractName() + ", ";
+            description = description + (changeCount+1) +". Contract name updated from '" + amc.getContractName() + "' to '" +addUpdateAmcDto.getContractName() + "'\n";
             changeCount++;
         }
         if(!amc.getExistingPartner().equals(addUpdateAmcDto.getExistingPartner())){
-            description = description + "Existing Partner updated from " + amc.getExistingPartner() + " to " +addUpdateAmcDto.getExistingPartner() + ", ";
+            description = description + (changeCount+1) +". Existing Partner updated from '" + amc.getExistingPartner() + "' to '" +addUpdateAmcDto.getExistingPartner() + "'\n";
             changeCount++;
         }
         if(amc.getInitialCostUSD() != addUpdateAmcDto.getInitialCostUSD()){
-            description = description + "Initial Cost USD updated from " + amc.getInitialCostUSD() + " to " +addUpdateAmcDto.getInitialCostUSD() + ", ";
+            description = description +(changeCount+1) + ". Initial Cost USD updated from '" + amc.getInitialCostUSD() + "' to '" +addUpdateAmcDto.getInitialCostUSD() + "'\n";
             changeCount++;
         }
         if(amc.getInitialCostLKR() != addUpdateAmcDto.getInitialCostLKR()){
-            description = description + "Initial Cost LKR updated from " + amc.getInitialCostLKR() + " to " +addUpdateAmcDto.getInitialCostLKR() + ", ";
+            description = description + (changeCount+1) +". Initial Cost LKR updated from '" + amc.getInitialCostLKR() + "' to '" +addUpdateAmcDto.getInitialCostLKR() + "'\n";
             changeCount++;
         }
         if(!formattedAmcStartDateString.equals(String.valueOf(addUpdateAmcDto.getStartDate()))){
-            description = description + "Start Date updated from " + amc.getStartDate() + " to " +addUpdateAmcDto.getStartDate() + ", ";
+            description = description + (changeCount+1) +". Start Date updated from '" + amc.getStartDate() + "' to '" +addUpdateAmcDto.getStartDate() + "'\n";
             changeCount++;
         }
         if(!formattedAmcEndDateString.equals(String.valueOf(addUpdateAmcDto.getEndDate()))){
-            description = description + "End Date updated from " + amc.getEndDate() + " to " +addUpdateAmcDto.getEndDate() + ", ";
+            description = description + (changeCount+1) +". End Date updated from '" + amc.getEndDate() + "' to '" +addUpdateAmcDto.getEndDate() + "'\n";
             changeCount++;
         }
         if(amc.getAmcValueUSD() != addUpdateAmcDto.getAmcValueUSD()){
-            description = description + "AMC Value USD Updated from " + amc.getAmcValueUSD() + " to " +addUpdateAmcDto.getAmcValueUSD() + ", ";
+            description = description + (changeCount+1) +". AMC Value USD Updated from '" + amc.getAmcValueUSD() + "' to '" +addUpdateAmcDto.getAmcValueUSD() + "'\n";
             changeCount++;
         }
         if(amc.getAmcValueLKR() != addUpdateAmcDto.getAmcValueLKR()){
-            description = description + "AMC Value LKR updated from " + amc.getAmcValueLKR() + " to " +addUpdateAmcDto.getAmcValueLKR() + ", ";
+            description = description + (changeCount+1) +". AMC Value LKR updated from '" + amc.getAmcValueLKR() + "' to '" +addUpdateAmcDto.getAmcValueLKR() + "'\n";
             changeCount++;
         }
         if(amc.getAmcPercentageUponPurchasePrice() != addUpdateAmcDto.getAmcPercentageUponPurchasePrice()){
-            description = description + "AMC % Upon Purchase Price updated from " + amc.getAmcPercentageUponPurchasePrice() + " to " +addUpdateAmcDto.getAmcPercentageUponPurchasePrice() + ", ";
+            description = description + (changeCount+1) +". AMC % Upon Purchase Price updated from '" + amc.getAmcPercentageUponPurchasePrice() + "' to '" +addUpdateAmcDto.getAmcPercentageUponPurchasePrice() + "'\n";
             changeCount++;
         }
         if(!amc.getCategory().equals(addUpdateAmcDto.getCategory())){
-            description = description + "Category updated from " + amc.getCategory() + " to " +addUpdateAmcDto.getCategory() + ", ";
+            description = description + (changeCount+1) +". Category updated from '" + amc.getCategory() + "' to '" +addUpdateAmcDto.getCategory() + "'\n";
             changeCount++;
         }
 
