@@ -5,6 +5,7 @@ target/
 !**/src/test/**/target/
 logs
 CSV-Files/
+PDF-Files/
 ### STS ###
 .apt_generated
 .classpath

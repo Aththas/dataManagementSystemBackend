@@ -17,6 +17,7 @@ public class Amc {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
     private String contractName;
     private String existingPartner;
     private String userDivision;
