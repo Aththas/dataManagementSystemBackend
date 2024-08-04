@@ -394,7 +394,4 @@ public class AmcServiceImpl implements AmcService {
                     HttpStatus.UNAUTHORIZED);
         }
     }
-
-
-
 }

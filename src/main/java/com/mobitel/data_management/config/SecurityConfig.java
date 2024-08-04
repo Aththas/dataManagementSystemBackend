@@ -33,6 +33,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/CSV-Files/**").permitAll()
+                        .requestMatchers("/PDF-Files/**").permitAll()
                         .requestMatchers("/api/v1/demo").hasRole(ADMIN.name())
                         .requestMatchers("/api/v1/user/**").hasRole(ADMIN.name())
                         .anyRequest().authenticated()

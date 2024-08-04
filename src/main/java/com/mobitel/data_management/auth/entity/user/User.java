@@ -38,6 +38,9 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user")
     private List<UserActivityAmc> userActivityAmcs;
 
+    @OneToMany(mappedBy = "user")
+    private List<Amc> pos;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return role.getAuthorities();
