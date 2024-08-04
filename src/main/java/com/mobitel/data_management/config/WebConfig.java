@@ -13,6 +13,10 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations("file:src/main/resources/static/CSV-Files/amc/")
                 .setCachePeriod(0);
 
+        registry.addResourceHandler("/CSV-Files/po/**")
+                .addResourceLocations("file:src/main/resources/static/CSV-Files/po/")
+                .setCachePeriod(0);
+
         registry.addResourceHandler("/PDF-Files/po/**")
                 .addResourceLocations("file:src/main/resources/static/PDF-Files/po/")
                 .setCachePeriod(0);
