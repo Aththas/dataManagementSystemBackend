@@ -7,10 +7,12 @@ import com.mobitel.data_management.dto.requestDto.AddUpdatePoDto;
 import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.entity.Po;
 import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
+import com.mobitel.data_management.other.csvService.PoCSVConverter;
 import com.mobitel.data_management.other.mapper.PoMapper;
 import com.mobitel.data_management.other.validator.ObjectValidator;
 import com.mobitel.data_management.repository.PoRepository;
 import com.mobitel.data_management.service.PoService;
+import com.mobitel.data_management.service.UserActivityPoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -34,6 +36,8 @@ public class PoServiceImpl implements PoService {
     private final PoRepository poRepository;
     private final PoMapper poMapper;
     private final ObjectValidator<AddUpdatePoDto> addUpdatePoDtoObjectValidator;
+    private final UserActivityPoService userActivityPoService;
+    private final PoCSVConverter poCSVConverter;
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
         Optional<User> optionalUser = userRepository.findByEmail(userEmail);
@@ -60,9 +64,33 @@ public class PoServiceImpl implements PoService {
                                 new ApiResponse<>(false, null, "PO number Already Exist", "PO_ERROR_001"),
                                 HttpStatus.OK);
                     }
+
+                    String action = "add";
+                    String description = user.getEmail() + " Added a Row";
+                    Integer currentVersion = userActivityPoService.findLastId()+1;
+
+                    String beforeName= "before version " + currentVersion;
+                    String filePathBeforeUpdate =poCSVConverter.generateCsvForPo(beforeName);
+                    String rowBefore = "";
+
                     Po po = new Po();
                     po.setUser(user);
                     poRepository.save(poMapper.addUpdatePoMapper(po,addUpdatePoDto));
+
+                    String afterName= "after version " + currentVersion;
+                    String filePathAfterUpdate = poCSVConverter.generateCsvForPo(afterName);
+                    String rowAfter = po.getPoNumber() + " | " + po.getCreationDate() + " | " + po.getPoCreationDate() + " | " +
+                            po.getPoType() + " | " + po.getVendorName() + " | " + po.getVendorSiteCode() + " | " + po.getPoDescription() + " | " +
+                            po.getApprovalStatus() + " | " + po.getCurrency() + " | " + po.getAmount() + " | " + po.getMatchedAmount() + " | " +
+                            po.getBuyerName() + " | " + po.getClosureStatus() + " | " + po.getPrNumber() + " | " + po.getPrCreationDate() + " | " +
+                            po.getRequisitionHeaderId() + " | " + po.getRequesterName() + " | " + po.getRequesterEmpNum() + " | " + po.getLineNum() + " | " +
+                            po.getItemCode() + " | " + po.getItemDescription() + " | " + po.getLineItemDescription() + " | " + po.getUnit() + " | " +
+                            po.getUnitPrice() + " | " + po.getQuantity() + " | " + po.getLineAmount() + " | " + po.getBudgetAccount() + " | " +
+                            po.getSegment6Desc() + " | " + po.getPurchaseDeliverToPersonId() + " | " + po.getPurchasePoDate() + " | " +
+                            po.getDepartment() + " | " + po.getPoFile() + " | " + po.getUser().getUsername();
+
+                    userActivityPoService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion, description);
+
 
                     log.info("PO Add: Success");
                     return new ResponseEntity<>(
