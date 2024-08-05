@@ -132,6 +132,12 @@ public class PoServiceImpl implements PoService {
                 addUpdatePoDtoObjectValidator.validate(addUpdatePoDto);
                 if(addUpdatePoDto != null){
                     try{
+                        if(!poMapper.isPdfFile(addUpdatePoDto.getPoFile())){
+                            log.error("PO Update: Accept pdf files only");
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "Accept pdf files only", "PO_FILE_NOT_FOUND_ERROR_001"),
+                                    HttpStatus.OK);
+                        }
                         Optional<Po> optionalPo = poRepository.findById(id);
                         if(optionalPo.isPresent() && user.equals(optionalPo.get().getUser())){
                             Po po = optionalPo.get();
