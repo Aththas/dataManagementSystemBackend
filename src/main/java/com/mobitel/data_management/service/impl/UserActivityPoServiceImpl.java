@@ -41,7 +41,11 @@ public class UserActivityPoServiceImpl implements UserActivityPoService {
 
     @Override
     public Integer findLastId() {
-        return userActivityPoRepository.findLastId();
+        Integer lastId = userActivityPoRepository.findLastId();
+        if(lastId == null){
+            lastId = 0;
+        }
+        return lastId;
     }
 
     @Override
@@ -67,9 +71,9 @@ public class UserActivityPoServiceImpl implements UserActivityPoService {
     public ResponseEntity<ApiResponse<?>> viewActivity(Integer id) {
         if(id != null){
             try{
-                Optional<UserActivityPo> optionalUserActivityAmc = userActivityPoRepository.findById(id);
-                if(optionalUserActivityAmc.isPresent()){
-                    UserActivityPo userActivityPo = optionalUserActivityAmc.get();
+                Optional<UserActivityPo> optionalUserActivityPo= userActivityPoRepository.findById(id);
+                if(optionalUserActivityPo.isPresent()){
+                    UserActivityPo userActivityPo = optionalUserActivityPo.get();
                     log.info("View Activity: User Activity Data Retrieved - " + userActivityPo.getVersion());
                     return new ResponseEntity<>(
                             new ApiResponse<>(true, userActivityPoMapper.userSingleActivityViewMapper(userActivityPo), "User Activity Data Retrieved", null),
