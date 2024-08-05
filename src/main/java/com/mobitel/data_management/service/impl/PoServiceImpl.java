@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -82,6 +83,9 @@ public class PoServiceImpl implements PoService {
                     String rowBefore = "";
 
                     Po po = new Po();
+                    MultipartFile poFile = addUpdatePoDto.getPoFile();
+                    String filePath = poMapper.saveFile(poFile);
+                    po.setPoFile(filePath);
                     po.setUser(user);
                     poRepository.save(poMapper.addUpdatePoMapper(po,addUpdatePoDto));
 
@@ -132,7 +136,7 @@ public class PoServiceImpl implements PoService {
                 addUpdatePoDtoObjectValidator.validate(addUpdatePoDto);
                 if(addUpdatePoDto != null){
                     try{
-                        if(!poMapper.isPdfFile(addUpdatePoDto.getPoFile())){
+                        if(addUpdatePoDto.getPoFile() != null && !poMapper.isPdfFile(addUpdatePoDto.getPoFile())){
                             log.error("PO Update: Accept pdf files only");
                             return new ResponseEntity<>(
                                     new ApiResponse<>(false, null, "Accept pdf files only", "PO_FILE_NOT_FOUND_ERROR_001"),
@@ -141,6 +145,14 @@ public class PoServiceImpl implements PoService {
                         Optional<Po> optionalPo = poRepository.findById(id);
                         if(optionalPo.isPresent() && user.equals(optionalPo.get().getUser())){
                             Po po = optionalPo.get();
+
+                            List<Po> optionalPoList = poRepository.findPoByPoNumberExcludingCurrentPo(addUpdatePoDto.getPoNumber(), id);
+                            if(!optionalPoList.isEmpty()){
+                                log.error("Update PO: PO Number already existed - " + addUpdatePoDto.getPoNumber());
+                                return new ResponseEntity<>(
+                                        new ApiResponse<>(false, null, "PO Number already existed - " + addUpdatePoDto.getPoNumber(), "EMAIL_ERROR_002"),
+                                        HttpStatus.OK);
+                            }
 
                             String action = "update";
                             String basicDescription = poMapper.getUpdateDescription(po, addUpdatePoDto);
@@ -165,6 +177,14 @@ public class PoServiceImpl implements PoService {
                                         po.getSegment6Desc() + " | " + po.getPurchaseDeliverToPersonId() + " | " + formattedPurchasePoDate + " | " +
                                         po.getDepartment() + " | " +  po.getUser().getUsername();
 
+                                String filePath;
+                                if(addUpdatePoDto.getPoFile() == null){
+                                    filePath = po.getPoFile();
+                                }else{
+                                    MultipartFile poFile = addUpdatePoDto.getPoFile();
+                                    filePath  = poMapper.saveFile(poFile);
+                                }
+                                po.setPoFile(filePath);
                                 poRepository.save(poMapper.addUpdatePoMapper(po,addUpdatePoDto));
 
                                 String afterName= "after version " + currentVersion;
