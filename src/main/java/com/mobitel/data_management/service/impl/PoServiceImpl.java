@@ -2,13 +2,13 @@ package com.mobitel.data_management.service.impl;
 
 import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.UserRepository;
-import com.mobitel.data_management.dto.requestDto.AddUpdateAmcDto;
 import com.mobitel.data_management.dto.requestDto.AddUpdatePoDto;
-import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.entity.Po;
 import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import com.mobitel.data_management.other.csvService.PoCSVConverter;
+import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
 import com.mobitel.data_management.other.mapper.PoMapper;
+import com.mobitel.data_management.other.stringUtility.StringUtils;
 import com.mobitel.data_management.other.validator.ObjectValidator;
 import com.mobitel.data_management.repository.PoRepository;
 import com.mobitel.data_management.service.PoService;
@@ -38,6 +38,8 @@ public class PoServiceImpl implements PoService {
     private final ObjectValidator<AddUpdatePoDto> addUpdatePoDtoObjectValidator;
     private final UserActivityPoService userActivityPoService;
     private final PoCSVConverter poCSVConverter;
+    private final StringUtils stringUtils;
+    private final DateFormatConverter dateFormatConverter;
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
         Optional<User> optionalUser = userRepository.findByEmail(userEmail);
@@ -54,6 +56,12 @@ public class PoServiceImpl implements PoService {
                         log.error("PO Add: PO File Not Found");
                         return new ResponseEntity<>(
                                 new ApiResponse<>(false, null, "PO File Not Found", "PO_FILE_NOT_FOUND_ERROR_001"),
+                                HttpStatus.OK);
+                    }
+                    if(!poMapper.isPdfFile(addUpdatePoDto.getPoFile())){
+                        log.error("PO Add: Accept pdf files only");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Accept pdf files only", "PO_FILE_NOT_FOUND_ERROR_001"),
                                 HttpStatus.OK);
                     }
 
@@ -87,10 +95,9 @@ public class PoServiceImpl implements PoService {
                             po.getItemCode() + " | " + po.getItemDescription() + " | " + po.getLineItemDescription() + " | " + po.getUnit() + " | " +
                             po.getUnitPrice() + " | " + po.getQuantity() + " | " + po.getLineAmount() + " | " + po.getBudgetAccount() + " | " +
                             po.getSegment6Desc() + " | " + po.getPurchaseDeliverToPersonId() + " | " + po.getPurchasePoDate() + " | " +
-                            po.getDepartment() + " | " + po.getPoFile() + " | " + po.getUser().getUsername();
+                            po.getDepartment() + " | " + po.getUser().getUsername();
 
                     userActivityPoService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion, description);
-
 
                     log.info("PO Add: Success");
                     return new ResponseEntity<>(
@@ -125,13 +132,64 @@ public class PoServiceImpl implements PoService {
                 addUpdatePoDtoObjectValidator.validate(addUpdatePoDto);
                 if(addUpdatePoDto != null){
                     try{
+                        if(!poMapper.isPdfFile(addUpdatePoDto.getPoFile())){
+                            log.error("PO Update: Accept pdf files only");
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "Accept pdf files only", "PO_FILE_NOT_FOUND_ERROR_001"),
+                                    HttpStatus.OK);
+                        }
                         Optional<Po> optionalPo = poRepository.findById(id);
                         if(optionalPo.isPresent() && user.equals(optionalPo.get().getUser())){
                             Po po = optionalPo.get();
+
+                            String action = "update";
+                            String basicDescription = poMapper.getUpdateDescription(po, addUpdatePoDto);
+                            if(!basicDescription.equals("no Changes")){
+                                String description = stringUtils.removeTrailingCommaAndSpace(basicDescription);
+                                int currentVersion = userActivityPoService.findLastId()+1;
+
+                                String formattedCreationDate = dateFormatConverter.convertDateFormat(String.valueOf(po.getCreationDate()));
+                                String formattedPoCreationDate = dateFormatConverter.convertDateFormat(String.valueOf(po.getPoCreationDate()));
+                                String formattedPrCreationDate = dateFormatConverter.convertDateFormat(String.valueOf(po.getPrCreationDate()));
+                                String formattedPurchasePoDate = dateFormatConverter.convertDateFormat(String.valueOf(po.getPurchasePoDate()));
+
+                                String beforeName= "before version " + currentVersion;
+                                String filePathBeforeUpdate = poCSVConverter.generateCsvForPo(beforeName);
+                                String rowBefore = po.getPoNumber() + " | " + formattedCreationDate + " | " + formattedPoCreationDate + " | " +
+                                        po.getPoType() + " | " + po.getVendorName() + " | " + po.getVendorSiteCode() + " | " + po.getPoDescription() + " | " +
+                                        po.getApprovalStatus() + " | " + po.getCurrency() + " | " + po.getAmount() + " | " + po.getMatchedAmount() + " | " +
+                                        po.getBuyerName() + " | " + po.getClosureStatus() + " | " + po.getPrNumber() + " | " + formattedPrCreationDate + " | " +
+                                        po.getRequisitionHeaderId() + " | " + po.getRequesterName() + " | " + po.getRequesterEmpNum() + " | " + po.getLineNum() + " | " +
+                                        po.getItemCode() + " | " + po.getItemDescription() + " | " + po.getLineItemDescription() + " | " + po.getUnit() + " | " +
+                                        po.getUnitPrice() + " | " + po.getQuantity() + " | " + po.getLineAmount() + " | " + po.getBudgetAccount() + " | " +
+                                        po.getSegment6Desc() + " | " + po.getPurchaseDeliverToPersonId() + " | " + formattedPurchasePoDate + " | " +
+                                        po.getDepartment() + " | " +  po.getUser().getUsername();
+
                                 poRepository.save(poMapper.addUpdatePoMapper(po,addUpdatePoDto));
-                            log.info("PO Update: Success");
+
+                                String afterName= "after version " + currentVersion;
+                                String filePathAfterUpdate = poCSVConverter.generateCsvForPo(afterName);
+                                String rowAfter = po.getPoNumber() + " | " + formattedCreationDate + " | " + formattedPoCreationDate + " | " +
+                                        po.getPoType() + " | " + po.getVendorName() + " | " + po.getVendorSiteCode() + " | " + po.getPoDescription() + " | " +
+                                        po.getApprovalStatus() + " | " + po.getCurrency() + " | " + po.getAmount() + " | " + po.getMatchedAmount() + " | " +
+                                        po.getBuyerName() + " | " + po.getClosureStatus() + " | " + po.getPrNumber() + " | " + formattedPrCreationDate + " | " +
+                                        po.getRequisitionHeaderId() + " | " + po.getRequesterName() + " | " + po.getRequesterEmpNum() + " | " + po.getLineNum() + " | " +
+                                        po.getItemCode() + " | " + po.getItemDescription() + " | " + po.getLineItemDescription() + " | " + po.getUnit() + " | " +
+                                        po.getUnitPrice() + " | " + po.getQuantity() + " | " + po.getLineAmount() + " | " + po.getBudgetAccount() + " | " +
+                                        po.getSegment6Desc() + " | " + po.getPurchaseDeliverToPersonId() + " | " + formattedPurchasePoDate + " | " +
+                                        po.getDepartment() + " | " +  po.getUser().getUsername();
+
+                                userActivityPoService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion, description);
+
+
+                                log.info("PO Update: Success");
+                                return new ResponseEntity<>(
+                                        new ApiResponse<>(true, null, "PO Updated", null),
+                                        HttpStatus.OK);
+                            }
+                            log.info("PO Update: Nothing is changed");
                             return new ResponseEntity<>(
-                                    new ApiResponse<>(true, null, "PO Updated", null),
+                                    new ApiResponse<>(false, null, "No changes Found", "PO_ERROR_001"),
                                     HttpStatus.OK);
                         }
                         log.error("PO Update: PO Not Found");
@@ -276,10 +334,34 @@ public class PoServiceImpl implements PoService {
                 try{
                     Optional<Po> optionalPo = poRepository.findById(id);
                     if(optionalPo.isPresent() && user.equals(optionalPo.get().getUser())){
+                        Po po = optionalPo.get();
+                        String action = "delete";
+                        String description = user.getEmail() + " Deleted a Row";
+                        Integer currentVersion = userActivityPoService.findLastId()+1;
+
+                        String beforeName= "before version " + currentVersion;
+                        String filePathBeforeUpdate =poCSVConverter.generateCsvForPo(beforeName);
+                        String rowBefore = po.getPoNumber() + " | " + po.getCreationDate() + " | " + po.getPoCreationDate() + " | " +
+                                po.getPoType() + " | " + po.getVendorName() + " | " + po.getVendorSiteCode() + " | " + po.getPoDescription() + " | " +
+                                po.getApprovalStatus() + " | " + po.getCurrency() + " | " + po.getAmount() + " | " + po.getMatchedAmount() + " | " +
+                                po.getBuyerName() + " | " + po.getClosureStatus() + " | " + po.getPrNumber() + " | " + po.getPrCreationDate() + " | " +
+                                po.getRequisitionHeaderId() + " | " + po.getRequesterName() + " | " + po.getRequesterEmpNum() + " | " + po.getLineNum() + " | " +
+                                po.getItemCode() + " | " + po.getItemDescription() + " | " + po.getLineItemDescription() + " | " + po.getUnit() + " | " +
+                                po.getUnitPrice() + " | " + po.getQuantity() + " | " + po.getLineAmount() + " | " + po.getBudgetAccount() + " | " +
+                                po.getSegment6Desc() + " | " + po.getPurchaseDeliverToPersonId() + " | " + po.getPurchasePoDate() + " | " +
+                                po.getDepartment() + " | " + po.getUser().getUsername();
 
                         poRepository.deleteById(id);
 
-                        log.info("Delete My PO: PO Data Deleted - " + optionalPo.get().getPoNumber());
+                        String afterName= "after version " + currentVersion;
+                        String filePathAfterUpdate = poCSVConverter.generateCsvForPo(afterName);
+                        String rowAfter = "";
+
+                        userActivityPoService.saveUserActivity(user,action,filePathBeforeUpdate,filePathAfterUpdate,rowBefore,rowAfter,currentVersion, description);
+
+
+
+                        log.info("Delete My PO: PO Data Deleted - " + po.getPoNumber());
                         return new ResponseEntity<>(
                                 new ApiResponse<>(true, null, "PO Deleted", null),
                                 HttpStatus.OK);
@@ -308,6 +390,5 @@ public class PoServiceImpl implements PoService {
                     HttpStatus.UNAUTHORIZED);
         }
     }
-
 
 }
