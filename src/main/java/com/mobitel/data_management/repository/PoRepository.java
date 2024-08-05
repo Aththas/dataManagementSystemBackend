@@ -5,6 +5,8 @@ import com.mobitel.data_management.entity.Po;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,4 +22,8 @@ public interface PoRepository extends JpaRepository<Po,Integer> {
 
     Page<Po> findAllByUserId(Integer userId, Pageable pageable);
     List<Po> findAllByUserId(Integer userId);
+
+    @Query("SELECT p FROM Po p WHERE p.poNumber = :poNumber AND p.id <> :id")
+    List<Po> findPoByPoNumberExcludingCurrentPo(@Param("poNumber") long poNumber, @Param("id") Integer id);
+
 }

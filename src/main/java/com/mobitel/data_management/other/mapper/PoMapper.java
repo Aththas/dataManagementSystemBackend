@@ -6,6 +6,7 @@ import com.mobitel.data_management.dto.responseDto.ViewPoDto;
 import com.mobitel.data_management.entity.Po;
 import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +19,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class PoMapper {
     private final DateFormatConverter dateFormatConverter;
@@ -54,15 +56,10 @@ public class PoMapper {
         po.setPurchaseDeliverToPersonId(addUpdatePoDto.getPurchaseDeliverToPersonId());
         po.setPurchasePoDate(addUpdatePoDto.getPurchasePoDate());
         po.setDepartment(addUpdatePoDto.getDepartment());
-
-        MultipartFile poFile = addUpdatePoDto.getPoFile();
-        String filePath = saveFile(poFile);
-        po.setPoFile(filePath);
-
         return po;
     }
 
-    private String saveFile(MultipartFile file) throws IOException {
+    public String saveFile(MultipartFile file) throws IOException {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Cannot save empty file.");
         }
@@ -148,11 +145,15 @@ public class PoMapper {
         return viewAllPoDto;
     }
 
-    public String getUpdateDescription(Po po, AddUpdatePoDto addUpdatePoDto) throws IOException {
+    public String getUpdateDescription(Po po, AddUpdatePoDto addUpdatePoDto) {
         String formattedCreationDate = dateFormatConverter.convertDateFormat(String.valueOf(po.getCreationDate()));
         String formattedPoCreationDate = dateFormatConverter.convertDateFormat(String.valueOf(po.getPoCreationDate()));
         String formattedPrCreationDate = dateFormatConverter.convertDateFormat(String.valueOf(po.getPrCreationDate()));
         String formattedPurchasePoDate = dateFormatConverter.convertDateFormat(String.valueOf(po.getPurchasePoDate()));
+
+        log.error(formattedCreationDate);
+        log.error(addUpdatePoDto.getCreationDate().toString());
+
         String description = "These fields are changed: \n";
         int changeCount = 0;
 
@@ -280,7 +281,7 @@ public class PoMapper {
             description += (changeCount + 1) + ". Department updated from '" + po.getDepartment() + "' to '" + addUpdatePoDto.getDepartment() + "'\n";
             changeCount++;
         }
-        if(!po.getPoFile().equals(saveFile(addUpdatePoDto.getPoFile()))){
+        if(addUpdatePoDto.getPoFile() != null){
             description += (changeCount + 1) + ". File Changed'\n";
             changeCount++;
         }

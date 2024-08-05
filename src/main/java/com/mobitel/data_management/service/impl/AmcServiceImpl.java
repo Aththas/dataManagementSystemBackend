@@ -119,6 +119,15 @@ public class AmcServiceImpl implements AmcService {
                     try{
                         Optional<Amc> optionalAmc = amcRepository.findById(id);
                         if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
+
+                            List<Amc> optionalAmcList = amcRepository.findAmcByContractNameExcludingCurrentAmc(addUpdateAmcDto.getContractName(), id);
+                            if(!optionalAmcList.isEmpty()){
+                                log.error("Update AMC: Contract Name already existed - " + addUpdateAmcDto.getContractName());
+                                return new ResponseEntity<>(
+                                        new ApiResponse<>(false, null, "Contract Name already existed - " + addUpdateAmcDto.getContractName(), "EMAIL_ERROR_002"),
+                                        HttpStatus.OK);
+                            }
+
                             Amc amc = optionalAmc.get();
                             String action = "update";
                             String basicDescription = amcMapper.getUpdateDescription(amc, addUpdateAmcDto);

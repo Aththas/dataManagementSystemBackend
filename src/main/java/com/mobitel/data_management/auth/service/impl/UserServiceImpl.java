@@ -95,8 +95,18 @@ public class UserServiceImpl implements UserService {
                                 new ApiResponse<>(false, null, "Invalid Email - " + addUserDto.getEmail(), "EMAIL_ERROR_002"),
                                 HttpStatus.OK);
                     }
+
                     Optional<User> optionalUser = userRepository.findById(id);
                     if(optionalUser.isPresent()){
+
+                        List<User> optionalUserList = userRepository.findUsersByEmailExcludingCurrentUser(addUserDto.getEmail(),id);
+                        if(!optionalUserList.isEmpty()){
+                            log.error("Update User: Email already existed - " + addUserDto.getEmail());
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "Email already existed - " + addUserDto.getEmail(), "EMAIL_ERROR_002"),
+                                    HttpStatus.OK);
+                        }
+
                         User user = optionalUser.get();
                         user.setFirstname(addUserDto.getFirstname());
                         user.setLastname(addUserDto.getLastname());
