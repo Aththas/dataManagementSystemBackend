@@ -6,6 +6,7 @@ import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.UserService;
 import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
+import com.mobitel.data_management.other.emailService.EmailService;
 import com.mobitel.data_management.other.mapper.UserMapper;
 import com.mobitel.data_management.other.validator.ObjectValidator;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +33,13 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final ObjectValidator<AddUserDto> addUserValidator;
+    private final EmailService emailService;
 
     @Value("${spring.application.security.user.password}")
     private String password;
+
+    @Value("${spring.application.security.url}")
+    private String appUrl;
     @Override
     public ResponseEntity<ApiResponse<?>> addUser(AddUserDto addUserDto) {
         addUserValidator.validate(addUserDto);
@@ -63,6 +68,15 @@ public class UserServiceImpl implements UserService {
                 user.setRole(Role.valueOf(addUserDto.getRole()));
                 user.setPassword(passwordEncoder.encode(password));
                 userRepository.save(user);
+
+                emailService.sendEmail(addUserDto.getEmail(), "Access for Mobitel Data Management System",
+                        "Hi!\n" +
+                                "We would like to invite you to connect to Mobitel Data Management System. " +
+                                "Use the default credentials below:\n" +
+                                "username: " + addUserDto.getEmail() + "\n" +
+                                "password: " + password + "\n" +
+                                "Please click the line below to visit the web app: \n" +
+                                appUrl);
 
                 log.info("Add User: New User Added - " + addUserDto.getEmail());
                 return new ResponseEntity<>(
@@ -213,7 +227,7 @@ public class UserServiceImpl implements UserService {
         if(id != null){
             try{
                 Optional<User> optionalUser = userRepository.findById(id);
-                if(optionalUser.isPresent()){
+                if(optionalUser.isPresent() && !optionalUser.get().getRole().equals(Role.ADMIN)){
                     User user = optionalUser.get();
                     if(user.getEmail().endsWith("null")){
                         log.warn("Disable User: User Already Disabled");
@@ -255,7 +269,7 @@ public class UserServiceImpl implements UserService {
         if(id != null){
             try{
                 Optional<User> optionalUser = userRepository.findById(id);
-                if(optionalUser.isPresent()){
+                if(optionalUser.isPresent() && !optionalUser.get().getRole().equals(Role.ADMIN)){
                     User user = optionalUser.get();
                     if(user.getEmail().endsWith("null")){
                         user.setEmail(user.getEmail().substring(0,user.getEmail().length()-4));

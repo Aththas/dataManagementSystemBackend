@@ -5,6 +5,7 @@ import com.mobitel.data_management.repository.AmcRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -22,6 +23,9 @@ import static org.apache.catalina.manager.StatusTransformer.formatTime;
 @RequiredArgsConstructor
 public class AmcCsvConverter {
     private final AmcRepository amcRepository;
+
+    @Value("${spring.application.security.backendUrl}")
+    private String backendUrl;
 
     public String amcCsvConverterRow(Amc amc) throws IOException {
         // Export data to CSV
@@ -57,7 +61,7 @@ public class AmcCsvConverter {
             }
         }
 
-        String baseURL = "http://localhost:8090/CSV-Files/amc/"+ name +".csv";
+        String baseURL = backendUrl + "/CSV-Files/amc/"+ name +".csv";
         String filePath = "src/main/resources/static/CSV-Files/amc/"+ name +".csv";
         Files.write(Paths.get(filePath), outputStream.toByteArray());
 
