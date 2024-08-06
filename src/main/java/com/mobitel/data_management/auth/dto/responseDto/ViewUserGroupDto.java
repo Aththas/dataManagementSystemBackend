@@ -4,5 +4,6 @@ import lombok.Data;
 
 @Data
 public class ViewUserGroupDto {
+    private Integer userId;
     private String email;
 }

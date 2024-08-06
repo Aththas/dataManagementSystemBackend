@@ -6,6 +6,7 @@ import com.mobitel.data_management.auth.entity.user.UserGroup;
 import com.mobitel.data_management.auth.repository.UserGroupRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.dto.requestDto.AddUpdatePoDto;
+import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.entity.Po;
 import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import com.mobitel.data_management.other.csvService.PoCSVConverter;
@@ -294,35 +295,56 @@ public class PoServiceImpl implements PoService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> viewAllPo(int page, int size, String sortBy, boolean ascending) {
-        try{
-            // Create a Sort object based on the sortBy parameter and direction
-            Sort sort = Sort.by(sortBy);
-            sort = ascending ? sort.ascending() : sort.descending();
+        User user = getCurrentUser();
+        if(user != null){
+            try{
+                // Create a Sort object based on the sortBy parameter and direction
+                Sort sort = Sort.by(sortBy);
+                sort = ascending ? sort.ascending() : sort.descending();
 
-            // Create a Pageable object with the provided page, size, and sort
-            Pageable pageable = PageRequest.of(page, size, sort);
+                // Create a Pageable object with the provided page, size, and sort
+                Pageable pageable = PageRequest.of(page, size, sort);
 
-            // Retrieve the paginated and sorted results
-            Page<Po> poList = poRepository.findAll(pageable);
-            List<Po> poListCount = poRepository.findAll();
-            int count = poListCount.size();
+                Page<Po> poList = null;
+                List<Po> poListCount = null;
+                int count = 0;
+                if(user.getRole().equals(Role.ADMIN)){
+                    poList = poRepository.findAll(pageable);
+                    poListCount = poRepository.findAll();
+                }else{
+                    List<String> grpNames = userGroupRepository.findGroupNamesByUserId(user.getId());
+                    List<User> users = userRepository.findAllByGroupNames(grpNames);
+                    users.add(user);
+                    poList = poRepository.findAllByUser(users,pageable);
+                    poListCount = poRepository.findAllByUser(users);
+                }
 
-            if(poList.isEmpty()){
-                log.error("View All PO: Empty List");
+                // Retrieve the paginated and sorted results
+
+                count = poListCount.size();
+
+                if(poList.isEmpty()){
+                    log.error("View All PO: Empty List");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                            HttpStatus.OK);
+                }
+                log.info("View All PO: Listed All PO List");
                 return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                        new ApiResponse<>(true, poList.stream().map(poMapper::viewAllMapper).collect(Collectors.toList()), Integer.toString(count), null),
                         HttpStatus.OK);
-            }
-            log.info("View All PO: Listed All PO List");
-            return new ResponseEntity<>(
-                    new ApiResponse<>(true, poList.stream().map(poMapper::viewAllMapper).collect(Collectors.toList()), Integer.toString(count), null),
-                    HttpStatus.OK);
 
-        }catch(Exception e){
-            log.error("View All PO: " + e);
+            }catch(Exception e){
+                log.error("View All PO: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("View All PO: Unauthorized Access");
             return new ResponseEntity<>(
-                    new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 

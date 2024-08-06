@@ -8,6 +8,7 @@ import com.mobitel.data_management.auth.repository.UserGroupRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.UserGroupService;
 import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
+import com.mobitel.data_management.other.validator.ObjectValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 public class UserGroupServiceImpl implements UserGroupService {
     private final UserRepository userRepository;
     private final UserGroupRepository userGroupRepository;
+    private final ObjectValidator<UserGroupDto> objectValidator;
 
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
@@ -39,6 +41,7 @@ public class UserGroupServiceImpl implements UserGroupService {
     public ResponseEntity<ApiResponse<?>> addToGrp(UserGroupDto userGroupDto) {
         User currentUser = getCurrentUser();
         if(currentUser != null){
+            objectValidator.validate(userGroupDto);
             if(userGroupDto != null){
                 try{
                     Optional<User> userToBeAdd = userRepository.findById(userGroupDto.getUserId());
@@ -189,7 +192,8 @@ public class UserGroupServiceImpl implements UserGroupService {
         if(currentUser != null){
             try {
                 List<UserGroup> users = userGroupRepository.findAllByGrpName(currentUser.getGrpName());
-                List<User> usersNotInGroup = userRepository.findUsersNotInIds(users.stream().map(UserGroup::getId).collect(Collectors.toList()));
+                List<User> usersNotInGroup = userRepository.findUsersNotInIds(users.stream().map(UserGroup::getUserId).collect(Collectors.toList()));
+                usersNotInGroup = usersNotInGroup.stream().filter(user -> !user.getId().equals(currentUser.getId())).collect(Collectors.toList());
                 int totalUsers = usersNotInGroup.size();
                 if(usersNotInGroup.isEmpty()){
                     log.error("View Users: Empty User List");
@@ -217,6 +221,7 @@ public class UserGroupServiceImpl implements UserGroupService {
 
     private ViewUserGroupDto usersNotInGroupViewMapper(User user) {
         ViewUserGroupDto viewUserGroupDto = new ViewUserGroupDto();
+        viewUserGroupDto.setUserId(user.getId());
         viewUserGroupDto.setEmail(user.getEmail());
         return viewUserGroupDto;
     }
@@ -227,6 +232,7 @@ public class UserGroupServiceImpl implements UserGroupService {
         if(optionalUser.isPresent()){
             User user = optionalUser.get();
             viewUserGroupDto.setEmail(user.getEmail());
+            viewUserGroupDto.setUserId(userGroup.getUserId());
         }
         return viewUserGroupDto;
     }

@@ -162,33 +162,54 @@ public class UserActivityPoServiceImpl implements UserActivityPoService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> viewAllActivities(int page, int size, String sortBy, boolean ascending) {
-        try{
-            // Create a Sort object based on the sortBy parameter and direction
-            Sort sort = Sort.by(sortBy);
-            sort = ascending ? sort.ascending() : sort.descending();
+        User user = getCurrentUser();
+        if(user != null){
+            try{
+                // Create a Sort object based on the sortBy parameter and direction
+                Sort sort = Sort.by(sortBy);
+                sort = ascending ? sort.ascending() : sort.descending();
 
-            // Create a Pageable object with the provided page, size, and sort
-            Pageable pageable = PageRequest.of(page, size, sort);
+                // Create a Pageable object with the provided page, size, and sort
+                Pageable pageable = PageRequest.of(page, size, sort);
 
-            Page<UserActivityPo> userActivityPoList = userActivityPoRepository.findAll(pageable);
-            List<UserActivityPo> userActivityPoListCount = userActivityPoRepository.findAll();
-            int count = userActivityPoListCount.size();
-            if(userActivityPoList.isEmpty()){
-                log.error("View All Activities: Empty List");
+                Page<UserActivityPo> userActivityPoList = null;
+                List<UserActivityPo> userActivityPoListCount = null;
+                int count = 0;
+                if(user.getRole().equals(Role.ADMIN)){
+                    userActivityPoList = userActivityPoRepository.findAll(pageable);
+                    userActivityPoListCount = userActivityPoRepository.findAll();
+                }else{
+                    List<String> grpNames = userGroupRepository.findGroupNamesByUserId(user.getId());
+                    List<User> users = userRepository.findAllByGroupNames(grpNames);
+                    users.add(user);
+                    userActivityPoList = userActivityPoRepository.findAllByUser(users,pageable);
+                    userActivityPoListCount = userActivityPoRepository.findAllByUser(users);
+                }
+
+
+                count = userActivityPoListCount.size();
+                if(userActivityPoList.isEmpty()){
+                    log.error("View All Activities: Empty List");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                            HttpStatus.OK);
+                }
+                log.info("View All Activities: Listed All Activities List");
                 return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                        new ApiResponse<>(true, userActivityPoList.stream().map(userActivityPoMapper::userActivityViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
                         HttpStatus.OK);
-            }
-            log.info("View All Activities: Listed All Activities List");
-            return new ResponseEntity<>(
-                    new ApiResponse<>(true, userActivityPoList.stream().map(userActivityPoMapper::userActivityViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
-                    HttpStatus.OK);
 
-        }catch (Exception e){
-            log.error("View All Activities: " + e);
+            }catch (Exception e){
+                log.error("View All Activities: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("View All Activities: Unauthorized Access");
             return new ResponseEntity<>(
-                    new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+                    new ApiResponse<>(false, null, "Invalid Authentication", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 }

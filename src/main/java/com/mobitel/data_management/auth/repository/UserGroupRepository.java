@@ -23,4 +23,7 @@ public interface UserGroupRepository extends JpaRepository<UserGroup,Integer> {
 
     List<UserGroup> findAllByGrpName(String grpName);
 
+    @Query("SELECT ug.grpName FROM UserGroup ug WHERE ug.userId = :userId")
+    List<String> findGroupNamesByUserId(Integer userId);
+
 }

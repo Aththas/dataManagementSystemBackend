@@ -254,35 +254,55 @@ public class AmcServiceImpl implements AmcService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> viewAllAmc(int page, int size, String sortBy, boolean ascending) {
-        try{
-            // Create a Sort object based on the sortBy parameter and direction
-            Sort sort = Sort.by(sortBy);
-            sort = ascending ? sort.ascending() : sort.descending();
+        User user = getCurrentUser();
+        if(user != null){
+            try{
+                // Create a Sort object based on the sortBy parameter and direction
+                Sort sort = Sort.by(sortBy);
+                sort = ascending ? sort.ascending() : sort.descending();
 
-            // Create a Pageable object with the provided page, size, and sort
-            Pageable pageable = PageRequest.of(page, size, sort);
+                // Create a Pageable object with the provided page, size, and sort
+                Pageable pageable = PageRequest.of(page, size, sort);
 
-            // Retrieve the paginated and sorted results
-            Page<Amc> amcList = amcRepository.findAll(pageable);
-            List<Amc> amcListCount = amcRepository.findAll();
-            int count = amcListCount.size();
+                Page<Amc> amcList = null;
+                List<Amc> amcListCount = null;
+                int count = 0;
+                if(user.getRole().equals(Role.ADMIN)){
+                    amcList = amcRepository.findAll(pageable);
+                    amcListCount = amcRepository.findAll();
+                }else{
+                    List<String> grpNames = userGroupRepository.findGroupNamesByUserId(user.getId());
+                    List<User> users = userRepository.findAllByGroupNames(grpNames);
+                    users.add(user);
+                    amcList = amcRepository.findAllByUser(users,pageable);
+                    amcListCount = amcRepository.findAllByUser(users);
+                }
+                // Retrieve the paginated and sorted results
 
-            if(amcList.isEmpty()){
-                log.error("View All AMC: Empty List");
+                count = amcListCount.size();
+
+                if(amcList.isEmpty()){
+                    log.error("View All AMC: Empty List");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                            HttpStatus.OK);
+                }
+                log.info("View All AMC: Listed All AMC List");
                 return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
+                        new ApiResponse<>(true, amcList.stream().map(amcMapper::allUsersViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
                         HttpStatus.OK);
-            }
-            log.info("View All AMC: Listed All AMC List");
-            return new ResponseEntity<>(
-                    new ApiResponse<>(true, amcList.stream().map(amcMapper::allUsersViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
-                    HttpStatus.OK);
 
-        }catch(Exception e){
-            log.error("View All AMC: " + e);
+            }catch(Exception e){
+                log.error("View All AMC: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("View All AMC: Unauthorized Access");
             return new ResponseEntity<>(
-                    new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 

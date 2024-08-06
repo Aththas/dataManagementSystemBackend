@@ -22,4 +22,7 @@ public interface UserRepository extends JpaRepository<User,Integer> {
 
     @Query("SELECT u FROM User u WHERE u.email = :email AND u.id <> :id")
     List<User> findUsersByEmailExcludingCurrentUser(@Param("email") String email, @Param("id") Integer id);
+
+    @Query("SELECT u FROM User u WHERE u.grpName IN :grpNames")
+    List<User> findAllByGroupNames(List<String> grpNames);
 }
