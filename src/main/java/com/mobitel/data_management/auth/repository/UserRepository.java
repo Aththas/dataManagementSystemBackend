@@ -15,6 +15,9 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User,Integer> {
     Optional<User> findByEmail(String email);
 
+    @Query("SELECT u FROM User u WHERE u.id NOT IN :ids")
+    List<User> findUsersNotInIds(List<Integer> ids);
+
     Page<User> findAll(Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE u.email = :email AND u.id <> :id")

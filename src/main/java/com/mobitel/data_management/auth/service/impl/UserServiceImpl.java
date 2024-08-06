@@ -67,7 +67,10 @@ public class UserServiceImpl implements UserService {
                 user.setEmail(addUserDto.getEmail());
                 user.setRole(Role.valueOf(addUserDto.getRole()));
                 user.setPassword(passwordEncoder.encode(password));
-                userRepository.save(user);
+
+                User savedUser = userRepository.save(user);
+                savedUser.setGrpName("viewGrp_" + savedUser.getId());
+                userRepository.save(savedUser);
 
                 emailService.sendEmail(addUserDto.getEmail(), "Access for Mobitel Data Management System",
                         "Hi!\n" +

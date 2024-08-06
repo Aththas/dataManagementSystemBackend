@@ -1,6 +1,9 @@
 package com.mobitel.data_management.service.impl;
 
+import com.mobitel.data_management.auth.entity.user.Role;
 import com.mobitel.data_management.auth.entity.user.User;
+import com.mobitel.data_management.auth.entity.user.UserGroup;
+import com.mobitel.data_management.auth.repository.UserGroupRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.dto.requestDto.AddUpdateAmcDto;
 import com.mobitel.data_management.entity.Amc;
@@ -40,6 +43,7 @@ public class AmcServiceImpl implements AmcService {
     private final UserActivityAmcService userActivityAmcService;
     private final StringUtils stringUtils;
     private final DateFormatConverter dateFormatConverter;
+    private final UserGroupRepository userGroupRepository;
 
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
@@ -105,7 +109,6 @@ public class AmcServiceImpl implements AmcService {
             return new ResponseEntity<>(
                     new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
                     HttpStatus.UNAUTHORIZED);
-
         }
     }
 
@@ -201,32 +204,52 @@ public class AmcServiceImpl implements AmcService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> viewAmc(Integer id) {
-        if(id != null){
-            try{
-                Optional<Amc> optionalAmc = amcRepository.findById(id);
-                if(optionalAmc.isPresent()){
-                    Amc amc = optionalAmc.get();
-                    log.info("View AMC: AMC Contract Data Retrieved - " + amc.getContractName());
+        User user = getCurrentUser();
+        if(user != null){
+            if(id != null){
+                try{
+                    Optional<Amc> optionalAmc = amcRepository.findById(id);
+                    if(optionalAmc.isPresent()){
+                        Amc amc = optionalAmc.get();
+
+                        String amcOwnerGrp = amc.getUser().getGrpName();
+                        Optional<UserGroup> optionalUserGroup = userGroupRepository.findByUserIdAndGrpName(user.getId(), amcOwnerGrp);
+                        if(amc.getUser().equals(user) || user.getRole().equals(Role.ADMIN) || optionalUserGroup.isPresent()){
+                            log.info("View AMC: AMC Contract Data Retrieved - " + amc.getContractName());
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(true, amcMapper.userViewMapper(amc), "AMC Contract Data Retrieved - " + amc.getContractName(), null),
+                                    HttpStatus.OK);
+                        }else{
+                            log.error("View AMC: Restricted View Access");
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "Restricted View Access", "AMC_ERROR_002"),
+                                    HttpStatus.OK);
+                        }
+
+
+                    }
+                    log.error("View AMC: AMC Contract Not Found");
                     return new ResponseEntity<>(
-                            new ApiResponse<>(true, amcMapper.userViewMapper(amc), "AMC Contract Data Retrieved - " + amc.getContractName(), null),
+                            new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
                             HttpStatus.OK);
+                }catch (Exception e){
+                    log.error("View AMC: " + e);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                            HttpStatus.INTERNAL_SERVER_ERROR);
                 }
-                log.error("View AMC: AMC Contract Not Found");
+            }else{
+                log.error("View AMC: Null User ID");
                 return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
-                        HttpStatus.OK);
-            }catch (Exception e){
-                log.error("View AMC: " + e);
-                return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
-                        HttpStatus.INTERNAL_SERVER_ERROR);
+                        new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                        HttpStatus.BAD_REQUEST);
             }
         }else{
-            log.error("View AMC: Null User ID");
-            return new ResponseEntity<>(
-                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
-                    HttpStatus.BAD_REQUEST);
-        }
+        log.error("View AMC: Unauthorized Access");
+        return new ResponseEntity<>(
+                new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                HttpStatus.UNAUTHORIZED);
+    }
     }
 
     @Override

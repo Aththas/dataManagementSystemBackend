@@ -1,6 +1,9 @@
 package com.mobitel.data_management.service.impl;
 
+import com.mobitel.data_management.auth.entity.user.Role;
 import com.mobitel.data_management.auth.entity.user.User;
+import com.mobitel.data_management.auth.entity.user.UserGroup;
+import com.mobitel.data_management.auth.repository.UserGroupRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.dto.requestDto.AddUpdatePoDto;
 import com.mobitel.data_management.entity.Po;
@@ -41,6 +44,7 @@ public class PoServiceImpl implements PoService {
     private final PoCSVConverter poCSVConverter;
     private final StringUtils stringUtils;
     private final DateFormatConverter dateFormatConverter;
+    private final UserGroupRepository userGroupRepository;
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
         Optional<User> optionalUser = userRepository.findByEmail(userEmail);
@@ -124,7 +128,6 @@ public class PoServiceImpl implements PoService {
             return new ResponseEntity<>(
                     new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
                     HttpStatus.UNAUTHORIZED);
-
         }
     }
 
@@ -242,31 +245,50 @@ public class PoServiceImpl implements PoService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> viewPo(Integer id) {
-        if(id != null){
-            try{
-                Optional<Po> optionalPo = poRepository.findById(id);
-                if(optionalPo.isPresent()){
-                    Po po = optionalPo.get();
-                    log.info("View PO: PO Data Retrieved - " + po.getPoNumber());
+        User user = getCurrentUser();
+        if(user != null){
+            if(id != null){
+                try{
+                    Optional<Po> optionalPo = poRepository.findById(id);
+                    if(optionalPo.isPresent()){
+                        Po po = optionalPo.get();
+
+                        String poOwnerGrp = po.getUser().getGrpName();
+                        Optional<UserGroup> optionalUserGroup = userGroupRepository.findByUserIdAndGrpName(user.getId(), poOwnerGrp);
+                        if(po.getUser().equals(user) || user.getRole().equals(Role.ADMIN) || optionalUserGroup.isPresent()){
+                            log.info("View PO: PO Data Retrieved - " + po.getPoNumber());
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(true, poMapper.viewMapper(po), "PO Data Retrieved - " + po.getPoNumber(), null),
+                                    HttpStatus.OK);
+                        }else{
+                            log.error("View PO: Restricted View Access");
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "Restricted View Access", "PO_ERROR_002"),
+                                    HttpStatus.OK);
+                        }
+
+                    }
+                    log.error("View PO: PO Not Found");
                     return new ResponseEntity<>(
-                            new ApiResponse<>(true, poMapper.viewMapper(po), "PO Data Retrieved - " + po.getPoNumber(), null),
+                            new ApiResponse<>(false, null, "PO Not Found", "AMC_ERROR_002"),
                             HttpStatus.OK);
+                }catch (Exception e){
+                    log.error("View PO: " + e);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                            HttpStatus.INTERNAL_SERVER_ERROR);
                 }
-                log.error("View PO: PO Not Found");
+            }else{
+                log.error("View PO: Null User ID");
                 return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "PO Not Found", "AMC_ERROR_002"),
-                        HttpStatus.OK);
-            }catch (Exception e){
-                log.error("View PO: " + e);
-                return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
-                        HttpStatus.INTERNAL_SERVER_ERROR);
+                        new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                        HttpStatus.BAD_REQUEST);
             }
         }else{
-            log.error("View PO: Null User ID");
+            log.error("View PO: Unauthorized Access");
             return new ResponseEntity<>(
-                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
-                    HttpStatus.BAD_REQUEST);
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 
