@@ -24,5 +24,10 @@ public interface AmcRepository extends JpaRepository<Amc,Integer> {
     @Query("SELECT a FROM Amc a WHERE a.contractName = :contractName AND a.id <> :id")
     List<Amc> findAmcByContractNameExcludingCurrentAmc(@Param("contractName") String contractName, @Param("id") Integer id);
 
+    @Query("SELECT a FROM Amc a WHERE a.user IN :users")
+    Page<Amc> findAllByUser(List<User> users, Pageable pageable);
+
+    @Query("SELECT a FROM Amc a WHERE a.user IN :users")
+    List<Amc> findAllByUser(List<User> users);
 
 }

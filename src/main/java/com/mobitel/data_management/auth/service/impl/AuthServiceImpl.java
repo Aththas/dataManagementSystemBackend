@@ -231,6 +231,48 @@ public class AuthServiceImpl implements AuthService {
                                 HttpStatus.OK);
                     }
 
+                    if (newPasswordDto.getNewPassword().length() < 8) {
+                        log.error("Password Reset: Password must be at least 8 characters long");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Password must be at least 8 characters long", "AUTH_ERROR_003"),
+                                HttpStatus.OK);
+                    }
+
+                    if (!newPasswordDto.getNewPassword().matches(".*[A-Z].*")) {
+                        log.error("Password Reset: Password must contain at least one uppercase letter");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Password must contain at least one uppercase letter", "AUTH_ERROR_003"),
+                                HttpStatus.OK);
+                    }
+
+                    if (!newPasswordDto.getNewPassword().matches(".*[a-z].*")) {
+                        log.error("Password Reset: Password Confirmation Error");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Password must contain at least one lowercase letter", "AUTH_ERROR_003"),
+                                HttpStatus.OK);
+                    }
+
+                    if (!newPasswordDto.getNewPassword().matches(".*[0-9].*")) {
+                        log.error("Password Reset: Password Confirmation Error");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Password must contain at least one digit", "AUTH_ERROR_003"),
+                                HttpStatus.OK);
+                    }
+
+                    if (!newPasswordDto.getNewPassword().matches(".*[@$!%*?&].*")) {
+                        log.error("Password Reset: Password Confirmation Error");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Password must contain at least one special character (e.g., @, $, !, %, *, ?, &)", "AUTH_ERROR_003"),
+                                HttpStatus.OK);
+                    }
+
+                    if (newPasswordDto.getNewPassword().contains(" ")) {
+                        log.error("Password Reset: Password Confirmation Error");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Password must not contain whitespace", "AUTH_ERROR_003"),
+                                HttpStatus.OK);
+                    }
+
                     User user = optionalUser.get();
                     user.setPassword(passwordEncoder.encode(newPasswordDto.getNewPassword()));
                     userRepository.save(user);

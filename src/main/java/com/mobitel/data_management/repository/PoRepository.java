@@ -1,5 +1,6 @@
 package com.mobitel.data_management.repository;
 
+import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.entity.Po;
 import org.springframework.data.domain.Page;
@@ -26,4 +27,9 @@ public interface PoRepository extends JpaRepository<Po,Integer> {
     @Query("SELECT p FROM Po p WHERE p.poNumber = :poNumber AND p.id <> :id")
     List<Po> findPoByPoNumberExcludingCurrentPo(@Param("poNumber") long poNumber, @Param("id") Integer id);
 
+    @Query("SELECT p FROM Po p WHERE p.user IN :users")
+    Page<Po> findAllByUser(List<User> users, Pageable pageable);
+
+    @Query("SELECT p FROM Po p WHERE p.user IN :users")
+    List<Po> findAllByUser(List<User> users);
 }

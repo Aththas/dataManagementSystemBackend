@@ -1,5 +1,6 @@
 package com.mobitel.data_management.repository;
 
+import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.entity.UserActivityAmc;
 import com.mobitel.data_management.entity.UserActivityPo;
 import org.springframework.data.domain.Page;
@@ -20,4 +21,10 @@ public interface UserActivityPoRepository extends JpaRepository<UserActivityPo,I
 
     @Query("SELECT MAX(id) FROM UserActivityPo")
     Integer findLastId();
+
+    @Query("SELECT uap FROM UserActivityPo uap WHERE uap.user IN :users")
+    Page<UserActivityPo> findAllByUser(List<User> users, Pageable pageable);
+
+    @Query("SELECT uap FROM UserActivityPo uap WHERE uap.user IN :users")
+    List<UserActivityPo> findAllByUser(List<User> users);
 }

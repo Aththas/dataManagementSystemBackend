@@ -1,6 +1,9 @@
 package com.mobitel.data_management.service.impl;
 
+import com.mobitel.data_management.auth.entity.user.Role;
 import com.mobitel.data_management.auth.entity.user.User;
+import com.mobitel.data_management.auth.entity.user.UserGroup;
+import com.mobitel.data_management.auth.repository.UserGroupRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.dto.requestDto.AddUpdateAmcDto;
 import com.mobitel.data_management.entity.Amc;
@@ -40,6 +43,7 @@ public class AmcServiceImpl implements AmcService {
     private final UserActivityAmcService userActivityAmcService;
     private final StringUtils stringUtils;
     private final DateFormatConverter dateFormatConverter;
+    private final UserGroupRepository userGroupRepository;
 
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
@@ -105,7 +109,6 @@ public class AmcServiceImpl implements AmcService {
             return new ResponseEntity<>(
                     new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
                     HttpStatus.UNAUTHORIZED);
-
         }
     }
 
@@ -201,65 +204,105 @@ public class AmcServiceImpl implements AmcService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> viewAmc(Integer id) {
-        if(id != null){
-            try{
-                Optional<Amc> optionalAmc = amcRepository.findById(id);
-                if(optionalAmc.isPresent()){
-                    Amc amc = optionalAmc.get();
-                    log.info("View AMC: AMC Contract Data Retrieved - " + amc.getContractName());
+        User user = getCurrentUser();
+        if(user != null){
+            if(id != null){
+                try{
+                    Optional<Amc> optionalAmc = amcRepository.findById(id);
+                    if(optionalAmc.isPresent()){
+                        Amc amc = optionalAmc.get();
+
+                        String amcOwnerGrp = amc.getUser().getGrpName();
+                        Optional<UserGroup> optionalUserGroup = userGroupRepository.findByUserIdAndGrpName(user.getId(), amcOwnerGrp);
+                        if(amc.getUser().equals(user) || user.getRole().equals(Role.ADMIN) || optionalUserGroup.isPresent()){
+                            log.info("View AMC: AMC Contract Data Retrieved - " + amc.getContractName());
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(true, amcMapper.userViewMapper(amc), "AMC Contract Data Retrieved - " + amc.getContractName(), null),
+                                    HttpStatus.OK);
+                        }else{
+                            log.error("View AMC: Restricted View Access");
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "Restricted View Access", "AMC_ERROR_002"),
+                                    HttpStatus.OK);
+                        }
+
+
+                    }
+                    log.error("View AMC: AMC Contract Not Found");
                     return new ResponseEntity<>(
-                            new ApiResponse<>(true, amcMapper.userViewMapper(amc), "AMC Contract Data Retrieved - " + amc.getContractName(), null),
+                            new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
+                            HttpStatus.OK);
+                }catch (Exception e){
+                    log.error("View AMC: " + e);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                            HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }else{
+                log.error("View AMC: Null User ID");
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                        HttpStatus.BAD_REQUEST);
+            }
+        }else{
+        log.error("View AMC: Unauthorized Access");
+        return new ResponseEntity<>(
+                new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                HttpStatus.UNAUTHORIZED);
+    }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<?>> viewAllAmc(int page, int size, String sortBy, boolean ascending) {
+        User user = getCurrentUser();
+        if(user != null){
+            try{
+                // Create a Sort object based on the sortBy parameter and direction
+                Sort sort = Sort.by(sortBy);
+                sort = ascending ? sort.ascending() : sort.descending();
+
+                // Create a Pageable object with the provided page, size, and sort
+                Pageable pageable = PageRequest.of(page, size, sort);
+
+                Page<Amc> amcList = null;
+                List<Amc> amcListCount = null;
+                int count = 0;
+                if(user.getRole().equals(Role.ADMIN)){
+                    amcList = amcRepository.findAll(pageable);
+                    amcListCount = amcRepository.findAll();
+                }else{
+                    List<String> grpNames = userGroupRepository.findGroupNamesByUserId(user.getId());
+                    List<User> users = userRepository.findAllByGroupNames(grpNames);
+                    users.add(user);
+                    amcList = amcRepository.findAllByUser(users,pageable);
+                    amcListCount = amcRepository.findAllByUser(users);
+                }
+                // Retrieve the paginated and sorted results
+
+                count = amcListCount.size();
+
+                if(amcList.isEmpty()){
+                    log.error("View All AMC: Empty List");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
                             HttpStatus.OK);
                 }
-                log.error("View AMC: AMC Contract Not Found");
+                log.info("View All AMC: Listed All AMC List");
                 return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
+                        new ApiResponse<>(true, amcList.stream().map(amcMapper::allUsersViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
                         HttpStatus.OK);
-            }catch (Exception e){
-                log.error("View AMC: " + e);
+
+            }catch(Exception e){
+                log.error("View All AMC: " + e);
                 return new ResponseEntity<>(
                         new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
                         HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }else{
-            log.error("View AMC: Null User ID");
+            log.error("View All AMC: Unauthorized Access");
             return new ResponseEntity<>(
-                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
-                    HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @Override
-    public ResponseEntity<ApiResponse<?>> viewAllAmc(int page, int size, String sortBy, boolean ascending) {
-        try{
-            // Create a Sort object based on the sortBy parameter and direction
-            Sort sort = Sort.by(sortBy);
-            sort = ascending ? sort.ascending() : sort.descending();
-
-            // Create a Pageable object with the provided page, size, and sort
-            Pageable pageable = PageRequest.of(page, size, sort);
-
-            // Retrieve the paginated and sorted results
-            Page<Amc> amcList = amcRepository.findAll(pageable);
-            List<Amc> amcListCount = amcRepository.findAll();
-            int count = amcListCount.size();
-
-            if(amcList.isEmpty()){
-                log.error("View All AMC: Empty List");
-                return new ResponseEntity<>(
-                        new ApiResponse<>(false, null, "Empty List", "EMPTY_ERROR_001"),
-                        HttpStatus.OK);
-            }
-            log.info("View All AMC: Listed All AMC List");
-            return new ResponseEntity<>(
-                    new ApiResponse<>(true, amcList.stream().map(amcMapper::allUsersViewMapper).collect(Collectors.toList()), Integer.toString(count), null),
-                    HttpStatus.OK);
-
-        }catch(Exception e){
-            log.error("View All AMC: " + e);
-            return new ResponseEntity<>(
-                    new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
         }
     }
 
