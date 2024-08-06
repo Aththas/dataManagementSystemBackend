@@ -5,6 +5,7 @@ import com.mobitel.data_management.repository.PoRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -18,6 +19,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PoCSVConverter {
     private final PoRepository poRepository;
+
+    @Value("${spring.application.security.backendUrl}")
+    private String backendUrl;
 
     public String generateCsvForPo(String name) throws IOException {
         List<Po> poList = poRepository.findAllByOrderById();
@@ -52,7 +56,7 @@ public class PoCSVConverter {
             }
         }
 
-        String baseURL = "http://localhost:8090/CSV-Files/po/"+ name +".csv";
+        String baseURL = backendUrl + "/CSV-Files/po/"+ name +".csv";
         String filePath = "src/main/resources/static/CSV-Files/po/"+ name +".csv";
         Files.write(Paths.get(filePath), outputStream.toByteArray());
 

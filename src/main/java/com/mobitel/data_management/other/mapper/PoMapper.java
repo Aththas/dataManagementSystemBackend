@@ -7,6 +7,7 @@ import com.mobitel.data_management.entity.Po;
 import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,6 +24,9 @@ import java.nio.file.StandardCopyOption;
 @RequiredArgsConstructor
 public class PoMapper {
     private final DateFormatConverter dateFormatConverter;
+
+    @Value("${spring.application.security.backendUrl}")
+    private String backendUrl;
 
     public Po addUpdatePoMapper(Po po, AddUpdatePoDto addUpdatePoDto) throws IOException {
         po.setPoNumber(addUpdatePoDto.getPoNumber());
@@ -66,7 +70,7 @@ public class PoMapper {
 
         // Define the base URL and the file path
         String fileName = file.getOriginalFilename();
-        String baseURL = "http://localhost:8090/PDF-Files/po/";
+        String baseURL = backendUrl + "/PDF-Files/po/";
         String directory = "src/main/resources/static/PDF-Files/po/";
         String filePath = directory + fileName;
 
