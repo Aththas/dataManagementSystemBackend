@@ -92,6 +92,7 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
 
 
                 count = userActivityAmcListCount.size();
+                log.info("count "+ count );
                 if(userActivityAmcList.isEmpty()){
                     log.error("View All Activities: Empty List");
                     return new ResponseEntity<>(
