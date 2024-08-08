@@ -14,6 +14,7 @@ public class UserMapper {
         userDto.setLastname(user.getLastname());
         userDto.setEmail(user.getEmail());
         userDto.setRole(String.valueOf(user.getRole()));
+        userDto.setViewPermission(user.isViewPermission());
         return userDto;
     }
 }

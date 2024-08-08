@@ -18,6 +18,9 @@ public interface UserRepository extends JpaRepository<User,Integer> {
     @Query("SELECT u FROM User u WHERE u.id NOT IN :ids")
     List<User> findUsersNotInIds(List<Integer> ids);
 
+    @Query("SELECT u FROM User u WHERE u.grpName NOT IN :grpNames")
+    List<User> findUsersNotInGrps(List<String> grpNames);
+
     Page<User> findAll(Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE u.email = :email AND u.id <> :id")
@@ -25,4 +28,6 @@ public interface UserRepository extends JpaRepository<User,Integer> {
 
     @Query("SELECT u FROM User u WHERE u.grpName IN :grpNames")
     List<User> findAllByGroupNames(List<String> grpNames);
+
+    Optional<User> findByGrpName(String grpName);
 }

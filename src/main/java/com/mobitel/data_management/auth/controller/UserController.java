@@ -42,4 +42,14 @@ public class UserController {
     public ResponseEntity<ApiResponse<?>> enableUser(@RequestParam Integer id){
         return userService.enableUser(id);
     }
+
+    @PutMapping("/enableCsvPermission")
+    public ResponseEntity<ApiResponse<?>> enableCsvPermission(@RequestParam Integer id) {
+        return userService.enableCsvPermission(id);
+    }
+
+    @PutMapping("/disableCsvPermission")
+    public ResponseEntity<ApiResponse<?>> disableCsvPermission(@RequestParam Integer id) {
+        return userService.disableCsvPermission(id);
+    }
 }

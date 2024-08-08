@@ -45,6 +45,7 @@ public class UserServiceImpl implements UserService {
         addUserValidator.validate(addUserDto);
         if(addUserDto != null){
             try{
+
                 Optional<User> optionalUser = userRepository.findByEmail(addUserDto.getEmail());
                 if(optionalUser.isPresent()){
                     log.error("Add User: Email already existed - " + addUserDto.getEmail());
@@ -53,11 +54,11 @@ public class UserServiceImpl implements UserService {
                             HttpStatus.OK);
                 }
 
-                if(addUserDto.getEmail().endsWith("null"))
+                if(!addUserDto.getEmail().endsWith("@mobitel.lk"))
                 {
-                    log.error("Add User: Email with null at the end is restricted");
+                    log.error("Add User: Only the Company associated email are allowed");
                     return new ResponseEntity<>(
-                            new ApiResponse<>(false, null, "Invalid Email - " + addUserDto.getEmail(), "EMAIL_ERROR_002"),
+                            new ApiResponse<>(false, null, "Only the Company associated email are allowed - " + addUserDto.getEmail(), "EMAIL_ERROR_002"),
                             HttpStatus.OK);
                 }
 
@@ -67,6 +68,7 @@ public class UserServiceImpl implements UserService {
                 user.setEmail(addUserDto.getEmail());
                 user.setRole(Role.valueOf(addUserDto.getRole()));
                 user.setPassword(passwordEncoder.encode(password));
+                user.setViewPermission(false);
 
                 User savedUser = userRepository.save(user);
                 savedUser.setGrpName("viewGrp_" + savedUser.getId());
@@ -105,11 +107,11 @@ public class UserServiceImpl implements UserService {
             addUserValidator.validate(addUserDto);
             if(addUserDto != null){
                 try{
-                    if(addUserDto.getEmail().endsWith("null"))
+                    if(!addUserDto.getEmail().endsWith("@mobitel.lk"))
                     {
-                        log.error("Update User: Email with null at the end is restricted");
+                        log.error("Update User: Only the Company associated email are allowed");
                         return new ResponseEntity<>(
-                                new ApiResponse<>(false, null, "Invalid Email - " + addUserDto.getEmail(), "EMAIL_ERROR_002"),
+                                new ApiResponse<>(false, null, "Only the Company associated email are allowed - " + addUserDto.getEmail(), "EMAIL_ERROR_002"),
                                 HttpStatus.OK);
                     }
 
@@ -301,6 +303,86 @@ public class UserServiceImpl implements UserService {
             }
         }else{
             log.error("Enable User: Null User ID");
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<?>> enableCsvPermission(Integer id) {
+        if(id != null){
+            try{
+                Optional<User> optionalUser = userRepository.findById(id);
+                if(optionalUser.isPresent() && !optionalUser.get().getRole().equals(Role.ADMIN)){
+                    User user = optionalUser.get();
+                    if(!user.isViewPermission()){
+                        user.setViewPermission(true);
+                        userRepository.save(user);
+
+                        log.info("Enable Permission: CSV View Access Provided " + user.getEmail());
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(true, null, "CSV View Access Provided to " + user.getEmail(), null),
+                                HttpStatus.OK);
+                    }
+                    log.warn("Enable Permission: User Already Has Access");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "User already has Access", "USER_ERROR_006"),
+                            HttpStatus.OK);
+                }
+
+                log.error("Enable Permission: User Not Found");
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "User Not Found", "USER_ERROR_002"),
+                        HttpStatus.OK);
+            }catch (Exception e){
+                log.error("Enable Permission: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("Enable Permission: Null User ID");
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<?>> disableCsvPermission(Integer id) {
+        if(id != null){
+            try{
+                Optional<User> optionalUser = userRepository.findById(id);
+                if(optionalUser.isPresent() && !optionalUser.get().getRole().equals(Role.ADMIN)){
+                    User user = optionalUser.get();
+                    if(user.isViewPermission()){
+                        user.setViewPermission(false);
+                        userRepository.save(user);
+
+                        log.info("Enable Permission: CSV View Access Disabled " + user.getEmail());
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(true, null, "CSV View Access Disabled from " + user.getEmail(), null),
+                                HttpStatus.OK);
+                    }
+                    log.warn("Enable Permission: User Already Has Access");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "User already has Access", "USER_ERROR_006"),
+                            HttpStatus.OK);
+                }
+
+                log.error("Enable Permission: User Not Found");
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "User Not Found", "USER_ERROR_002"),
+                        HttpStatus.OK);
+            }catch (Exception e){
+                log.error("Enable Permission: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("Enable Permission: Null User ID");
             return new ResponseEntity<>(
                     new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
                     HttpStatus.BAD_REQUEST);

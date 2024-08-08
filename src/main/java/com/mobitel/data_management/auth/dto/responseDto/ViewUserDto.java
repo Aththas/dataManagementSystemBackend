@@ -9,4 +9,5 @@ public class ViewUserDto {
     private String lastname;
     private String email;
     private String role;
+    private boolean viewPermission;
 }
