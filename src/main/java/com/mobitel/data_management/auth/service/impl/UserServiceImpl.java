@@ -4,6 +4,7 @@ import com.mobitel.data_management.auth.dto.requestDto.AddUserDto;
 import com.mobitel.data_management.auth.entity.user.Role;
 import com.mobitel.data_management.auth.entity.user.User;
 import com.mobitel.data_management.auth.repository.UserRepository;
+import com.mobitel.data_management.auth.service.AuthService;
 import com.mobitel.data_management.auth.service.UserService;
 import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import com.mobitel.data_management.other.emailService.EmailService;
@@ -34,6 +35,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final ObjectValidator<AddUserDto> addUserValidator;
     private final EmailService emailService;
+    private final AuthService authService;
 
     @Value("${spring.application.security.user.password}")
     private String password;
@@ -80,7 +82,7 @@ public class UserServiceImpl implements UserService {
                                 "Use the default credentials below:\n" +
                                 "username: " + addUserDto.getEmail() + "\n" +
                                 "password: " + password + "\n" +
-                                "Please click the line below to visit the web app: \n" +
+                                "Please click the link below to visit the web app: \n" +
                                 appUrl);
 
                 log.info("Add User: New User Added - " + addUserDto.getEmail());
@@ -243,6 +245,14 @@ public class UserServiceImpl implements UserService {
                     user.setEmail(user.getEmail() + "null");
                     userRepository.save(user);
 
+                    authService.revokeAllValidUserTokens(id);//make the logged-in users session expired
+
+                    emailService.sendEmail(user.getEmail().substring(0,user.getEmail().length()-4), "Account Disabled for Mobitel Data Management System",
+                            """
+                                    Hi!
+                                     Your Mobitel Data Management Account has been temporarily disabled due to security reasons\s
+                                     Contact your admin and get back your account""");
+
                     log.info("Disable User: Disabled " + user.getEmail().substring(0,user.getEmail().length()-4));
                     return new ResponseEntity<>(
                             new ApiResponse<>(true, null, "User Disabled", null),
@@ -279,6 +289,14 @@ public class UserServiceImpl implements UserService {
                     if(user.getEmail().endsWith("null")){
                         user.setEmail(user.getEmail().substring(0,user.getEmail().length()-4));
                         userRepository.save(user);
+
+                        emailService.sendEmail(user.getEmail(), "Account Enabled for Mobitel Data Management System",
+                                """
+                                        Hi!
+                                        Your Mobitel Data Management Account has been enabled successfully\s
+                                         """ +
+                                        "Please click the link below to visit the web app: \n" +
+                                        appUrl);
 
                         log.info("Enable User: Enabled " + user.getEmail());
                         return new ResponseEntity<>(
@@ -320,6 +338,14 @@ public class UserServiceImpl implements UserService {
                         user.setViewPermission(true);
                         userRepository.save(user);
 
+                        emailService.sendEmail(user.getEmail(), "Permission Enabled for Mobitel Data Management System",
+                                """
+                                        Hi!
+                                        You have received permission to view excel sheets in Mobitel Data Management provided by admin\s
+                                         """ +
+                                        "Please click the link below to visit the web app: \n" +
+                                        appUrl);
+
                         log.info("Enable Permission: CSV View Access Provided " + user.getEmail());
                         return new ResponseEntity<>(
                                 new ApiResponse<>(true, null, "CSV View Access Provided to " + user.getEmail(), null),
@@ -359,6 +385,14 @@ public class UserServiceImpl implements UserService {
                     if(user.isViewPermission()){
                         user.setViewPermission(false);
                         userRepository.save(user);
+
+                        emailService.sendEmail(user.getEmail(), "Permission Disabled for Mobitel Data Management System",
+                                """
+                                        Hi!
+                                        Your view excel sheets permission has been restricted in Mobitel Data Management by admin\s
+                                         """ +
+                                        "Please click the link below to visit the web app: \n" +
+                                        appUrl);
 
                         log.info("Enable Permission: CSV View Access Disabled " + user.getEmail());
                         return new ResponseEntity<>(

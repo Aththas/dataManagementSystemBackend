@@ -341,7 +341,8 @@ public class AuthServiceImpl implements AuthService {
         tokenRepository.save(token);
     }
 
-    private void revokeAllValidUserTokens(Integer id) {
+    @Override
+    public void revokeAllValidUserTokens(Integer id) {
         List<Token> validTokens = tokenRepository.findAllValidTokensByUserId(id);
 
         if(validTokens.isEmpty())

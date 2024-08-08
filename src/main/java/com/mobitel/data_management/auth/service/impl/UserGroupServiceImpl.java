@@ -14,9 +14,11 @@ import com.mobitel.data_management.auth.repository.UserGroupRepository;
 import com.mobitel.data_management.auth.repository.UserRepository;
 import com.mobitel.data_management.auth.service.UserGroupService;
 import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
+import com.mobitel.data_management.other.emailService.EmailService;
 import com.mobitel.data_management.other.validator.ObjectValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,6 +42,10 @@ public class UserGroupServiceImpl implements UserGroupService {
     private final ObjectValidator<UserGroupDto> objectValidator;
     private final ObjectValidator<AddAccessRequestDto> accessRequestDtoObjectValidator;
     private final AccessRequestRepository accessRequestRepository;
+    private final EmailService emailService;
+
+    @Value("${spring.application.security.url}")
+    private String appUrl;
 
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
@@ -61,6 +68,12 @@ public class UserGroupServiceImpl implements UserGroupService {
                             userGroup.setGrpName(currentUser.getGrpName());
                             userGroup.setUserId(userGroupDto.getUserId());
                             userGroupRepository.save(userGroup);
+
+                            emailService.sendEmail(userToBeAdd.get().getEmail(), "Permission Enabled for Mobitel Data Management System",
+                                    "Hi!\n" +
+                                            "You have received permission to view the activities of the " + currentUser.getEmail() + " in Mobitel Data Management\n" +
+                                            "Please click the link below to visit the web app: \n" +
+                                            appUrl);
 
                             log.info("User Add to Group: User Added to My View group");
                             return new ResponseEntity<>(
@@ -114,6 +127,12 @@ public class UserGroupServiceImpl implements UserGroupService {
                                 userGroupRepository.findByUserIdAndGrpName(id, currentUser.getGrpName());
                         if(optionalUserGroup.isPresent()){
                             userGroupRepository.deleteByUserIdAndGrpName(id, currentUser.getGrpName());
+
+                            emailService.sendEmail(userToBeRemove.get().getEmail(), "Permission Disabled for Mobitel Data Management System",
+                                    "Hi!\n" +
+                                            "Your permission to view the activities of the " + currentUser.getEmail() + " in Mobitel Data Management has been restricted\n" +
+                                            "Please click the link below to visit the web app: \n" +
+                                            appUrl);
 
                             log.info("User Remove from Group: User Removed from My View group");
                             return new ResponseEntity<>(
@@ -328,6 +347,12 @@ public class UserGroupServiceImpl implements UserGroupService {
                                     accessRequest.setRequesterId(user.getId());
                                     accessRequestRepository.save(accessRequest);
 
+                                    emailService.sendEmail(optionalGrpOwner.get().getEmail(), "Access Request in Mobitel Data Management System",
+                                            "Hi!\n" +
+                                                    user.getEmail() + " have requested an access to view your activities in Mobitel Data Management\n" +
+                                                    "Please click the link below to visit the web app: \n" +
+                                                    appUrl);
+
                                     log.info("Add Access Request: Access Request has been made, Wait till the Owner Confirmation");
                                     return new ResponseEntity<>(
                                             new ApiResponse<>(true, null, "Access Request has been made, Wait till the Owner Confirmation", null),
@@ -478,6 +503,14 @@ public class UserGroupServiceImpl implements UserGroupService {
                         userGroup.setUserId(accessRequest.getRequesterId());
                         userGroupRepository.save(userGroup);
 
+                        User reqUser = userRepository.findById(accessRequest.getRequesterId()).orElseThrow(() -> new UsernameNotFoundException("USER NOT FOUND"));
+
+                        emailService.sendEmail(reqUser.getEmail(), "Access Request Update in Mobitel Data Management System",
+                                "Hi!\n" +
+                                        "Your access request to view the activities of " + user.getEmail() + " has been accepted in Mobitel Data Management\n" +
+                                        "Please click the link below to visit the web app: \n" +
+                                        appUrl);
+
                         accessRequestRepository.deleteById(id);
 
                         log.info("Accept Access Request: Accepted");
@@ -521,6 +554,16 @@ public class UserGroupServiceImpl implements UserGroupService {
                 try{
                     Optional<AccessRequest> optionalAccessRequest = accessRequestRepository.findById(id);
                     if(optionalAccessRequest.isPresent() && user.getId().equals(optionalAccessRequest.get().getGrpOwnerId())){
+                        AccessRequest accessRequest = optionalAccessRequest.get();
+
+                        User reqUser = userRepository.findById(accessRequest.getRequesterId()).orElseThrow(() -> new UsernameNotFoundException("USER NOT FOUND"));
+
+                        emailService.sendEmail(reqUser.getEmail(), "Access Request Update in Mobitel Data Management System",
+                                "Hi!\n" +
+                                        "Your access request to view the activities of " + user.getEmail() + " has been rejected in Mobitel Data Management\n" +
+                                        "Please click the link below to visit the web app: \n" +
+                                        appUrl);
+
                         accessRequestRepository.deleteById(id);
 
                         log.info("Reject Access Request: Rejected");
