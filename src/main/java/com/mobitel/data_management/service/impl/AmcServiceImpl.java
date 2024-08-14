@@ -511,24 +511,7 @@ public class AmcServiceImpl implements AmcService {
                         amc.setAcknowledged(true);
                         amcRepository.save(amc);
                         log.info("Acknowledge My AMC: AMC Contract Acknowledged - " + amc.getContractName());
-
-                        //asynchronous email sending
-                        CompletableFuture.runAsync(() -> {
-                            List<User> superUsers = userRepository.findBySuperUserTrue();
-                            for (User superUser : superUsers) {
-                                try {
-                                    emailService.sendEmail(
-                                            superUser.getEmail(),
-                                            "AMC Contract Acknowledged",
-                                            "AMC Contact " + amc.getContractName() + ", has been acknowledged by " +
-                                                    amc.getUser().getEmail()
-                                            );
-                                    log.info("Email sent to Super User: " + superUser.getEmail());
-                                } catch (Exception e) {
-                                    log.error("Failed to send email to Super User: " + superUser.getEmail(), e);
-                                }
-                            }
-                        });
+                        notifySuperUsers(amc);//send emails to superuser
 
                         return new ResponseEntity<>(
                                 new ApiResponse<>(true, null, "AMC Contract Acknowledged", null),
@@ -557,5 +540,25 @@ public class AmcServiceImpl implements AmcService {
                     new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
                     HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    private void notifySuperUsers(Amc amc) {
+        //asynchronous email sending
+        CompletableFuture.runAsync(() -> {
+            List<User> superUsers = userRepository.findBySuperUserTrue();
+            for (User superUser : superUsers) {
+                try {
+                    emailService.sendEmail(
+                            superUser.getEmail(),
+                            "AMC Contract Acknowledged",
+                            "AMC Contact " + amc.getContractName() + ", has been acknowledged by " +
+                                    amc.getUser().getEmail()
+                    );
+                    log.info("Email sent to Super User: " + superUser.getEmail());
+                } catch (Exception e) {
+                    log.error("Failed to send email to Super User: " + superUser.getEmail(), e);
+                }
+            }
+        });
     }
 }
