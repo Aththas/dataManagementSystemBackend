@@ -31,6 +31,6 @@ public interface AmcRepository extends JpaRepository<Amc,Integer> {
     @Query("SELECT a FROM Amc a WHERE a.user IN :users")
     List<Amc> findAllByUser(List<User> users);
 
-    List<Amc> findAllByEndDateBetweenAndAcknowledgedIsFalse(LocalDate startDate, LocalDate endDate);
+    List<Amc> findAllByEndDateBetweenAndIsAcknowledgedIsFalse(LocalDate startDate, LocalDate endDate);
 
 }

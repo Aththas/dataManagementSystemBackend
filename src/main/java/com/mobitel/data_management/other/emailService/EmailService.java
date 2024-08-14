@@ -39,7 +39,7 @@ public class EmailService {
         LocalDate now = LocalDate.now();
         LocalDate threeMonthsLater = now.plus(3, ChronoUnit.MONTHS);
 
-        List<Amc> amcExpiringSoonList = amcRepository.findAllByEndDateBetweenAndAcknowledgedIsFalse(now, threeMonthsLater);
+        List<Amc> amcExpiringSoonList = amcRepository.findAllByEndDateBetweenAndIsAcknowledgedIsFalse(now, threeMonthsLater);
 
         for (Amc amc : amcExpiringSoonList) {
             if (!amc.isFirstEmailSent()) {
