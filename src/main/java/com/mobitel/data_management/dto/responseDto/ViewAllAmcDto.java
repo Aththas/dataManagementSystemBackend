@@ -20,5 +20,6 @@ public class ViewAllAmcDto {
     private Date endDate;
 
     private String category;
+    private String amcFile;
     private String user;
 }

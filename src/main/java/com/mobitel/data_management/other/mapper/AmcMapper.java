@@ -7,14 +7,26 @@ import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class AmcMapper {
     private final DateFormatConverter dateFormatConverter;
+
+    @Value("${spring.application.security.backendUrl}")
+    private String backendUrl;
 
     public Amc addUpdateAmcMapper(Amc amc, AddUpdateAmcDto addUpdateAmcDto){
         amc.setUserDivision(addUpdateAmcDto.getUserDivision());
@@ -80,6 +92,10 @@ public class AmcMapper {
             description = description + (changeCount+1) +". Category updated from '" + amc.getCategory() + "' to '" +addUpdateAmcDto.getCategory() + "'\n";
             changeCount++;
         }
+        if(addUpdateAmcDto.getAmcFile() != null){
+            description += (changeCount + 1) + ". File Changed'\n";
+            changeCount++;
+        }
 
         if (changeCount == 0){
             return "no Changes";
@@ -115,8 +131,53 @@ public class AmcMapper {
         viewAmcDto.setStartDate(amc.getStartDate());
         viewAmcDto.setEndDate(amc.getEndDate());
         viewAmcDto.setCategory(amc.getCategory());
+        viewAmcDto.setAmcFile(amc.getAmcFile());
         viewAmcDto.setUser(amc.getUser().getUsername());
         return viewAmcDto;
+    }
+
+    public String saveFile(MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Cannot save empty file.");
+        }
+
+        // Define the base URL and the file path
+        String fileName = file.getOriginalFilename();
+        String baseURL = backendUrl + "/PDF-Files/amc/";
+        String directory = "src/main/resources/static/PDF-Files/amc/";
+        String filePath = directory + fileName;
+
+        // Create directories if they don't exist
+        Path directoryPath = Paths.get(directory);
+        if (!Files.exists(directoryPath)) {
+            Files.createDirectories(directoryPath);
+        }
+
+        // Save the file to the specified path
+        try (InputStream inputStream = file.getInputStream()) {
+            Files.copy(inputStream, Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        return baseURL + fileName;
+    }
+
+    public boolean isPdfFile(MultipartFile file) {
+        String filename = file.getOriginalFilename();
+        if (filename != null) {
+            String extension = filename.substring(filename.lastIndexOf(".") + 1);
+            return extension.equalsIgnoreCase("pdf");
+        }
+        return false;
+    }
+
+    public String setRowDetails(Amc amc){
+
+        return amc.getUserDivision() + " | " + amc.getContractName() + " | " +
+                amc.getExistingPartner() + " | " + amc.getInitialCostUSD() + " | " +
+                amc.getInitialCostLKR() + " | " + amc.getStartDate() + " | " +
+                amc.getEndDate() + " | " + amc.getAmcValueUSD() + " | " + amc.getAmcValueLKR()+ " | " +
+                amc.getAmcPercentageUponPurchasePrice() + " | " + amc.getCategory()+ " | " +
+                amc.getUser().getUsername();
     }
 
 }

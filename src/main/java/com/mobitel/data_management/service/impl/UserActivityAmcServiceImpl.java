@@ -48,7 +48,7 @@ public class UserActivityAmcServiceImpl implements UserActivityAmcService {
     public void saveUserActivity(User user, String action, String filePathBeforeUpdate, String filePathAfterUpdate,
                                  String rowBefore, String rowAfter, Integer currentVersion,String description) {
         LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy HH:mm:ss");
         String formattedDate = now.format(formatter);
 
         UserActivityAmc userActivityAmc = new UserActivityAmc();
