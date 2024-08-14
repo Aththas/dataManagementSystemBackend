@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 
@@ -54,4 +55,6 @@ public class AddUpdateAmcDto {
     @NotEmpty(message = "Empty Category")
     @NotNull(message = "Invalid Category")
     private String category;
+
+    private MultipartFile amcFile;
 }

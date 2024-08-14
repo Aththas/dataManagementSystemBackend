@@ -3,6 +3,7 @@ package com.mobitel.data_management.other.mapper;
 import com.mobitel.data_management.dto.requestDto.AddUpdatePoDto;
 import com.mobitel.data_management.dto.responseDto.ViewAllPoDto;
 import com.mobitel.data_management.dto.responseDto.ViewPoDto;
+import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.entity.Po;
 import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
 import lombok.RequiredArgsConstructor;
@@ -294,6 +295,19 @@ public class PoMapper {
         }else{
             return description;
         }
+    }
+
+    public String setRowDetails(Po po){
+
+        return po.getPoNumber() + " | " + po.getCreationDate() + " | " + po.getPoCreationDate() + " | " +
+                po.getPoType() + " | " + po.getVendorName() + " | " + po.getVendorSiteCode() + " | " + po.getPoDescription() + " | " +
+                po.getApprovalStatus() + " | " + po.getCurrency() + " | " + po.getAmount() + " | " + po.getMatchedAmount() + " | " +
+                po.getBuyerName() + " | " + po.getClosureStatus() + " | " + po.getPrNumber() + " | " + po.getPrCreationDate() + " | " +
+                po.getRequisitionHeaderId() + " | " + po.getRequesterName() + " | " + po.getRequesterEmpNum() + " | " + po.getLineNum() + " | " +
+                po.getItemCode() + " | " + po.getItemDescription() + " | " + po.getLineItemDescription() + " | " + po.getUnit() + " | " +
+                po.getUnitPrice() + " | " + po.getQuantity() + " | " + po.getLineAmount() + " | " + po.getBudgetAccount() + " | " +
+                po.getSegment6Desc() + " | " + po.getPurchaseDeliverToPersonId() + " | " + po.getPurchasePoDate() + " | " +
+                po.getDepartment() + " | " +  po.getUser().getUsername();
     }
 
 }

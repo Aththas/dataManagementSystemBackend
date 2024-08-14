@@ -1,5 +1,6 @@
 package com.mobitel.data_management.auth.entity.user;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.mobitel.data_management.auth.entity.token.Token;
 import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.entity.Po;
@@ -34,18 +35,23 @@ public class User implements UserDetails {
     private Role role;
 
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<Token> tokens;
 
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<Amc> amcs;
 
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<UserActivityAmc> userActivityAmcs;
 
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<Po> pos;
 
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private List<UserActivityPo> userActivityPos;
 
     @Override

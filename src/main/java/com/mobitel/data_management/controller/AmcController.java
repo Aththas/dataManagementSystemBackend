@@ -14,12 +14,12 @@ public class AmcController {
     private final AmcService amcService;
 
     @PostMapping("/addAmc")
-    public ResponseEntity<ApiResponse<?>> addAmc(@RequestBody AddUpdateAmcDto addUpdateAmcDto){
+    public ResponseEntity<ApiResponse<?>> addAmc(@ModelAttribute AddUpdateAmcDto addUpdateAmcDto){
         return amcService.addAmc(addUpdateAmcDto);
     }
 
     @PutMapping("/updateMyAmc")
-    public ResponseEntity<ApiResponse<?>> updateAmc(@RequestParam Integer id, @RequestBody AddUpdateAmcDto addUpdateAmcDto){
+    public ResponseEntity<ApiResponse<?>> updateAmc(@RequestParam Integer id, @ModelAttribute AddUpdateAmcDto addUpdateAmcDto){
         return amcService.updateAmc(id, addUpdateAmcDto);
     }
 

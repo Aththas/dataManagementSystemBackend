@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +58,20 @@ public class AmcServiceImpl implements AmcService {
             addAmcObjectValidator.validate(addUpdateAmcDto);
             if(addUpdateAmcDto != null){
                 try{
+                    if(addUpdateAmcDto.getAmcFile() == null){
+                        log.error("AMC Add: AMC File Not Found");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "AMC File Not Found", "AMC_FILE_NOT_FOUND_ERROR_001"),
+                                HttpStatus.OK);
+                    }
+                    if(!amcMapper.isPdfFile(addUpdateAmcDto.getAmcFile())){
+                        log.error("AMC Add: Accept pdf files only");
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(false, null, "Accept pdf files only", "AMC_FILE_NOT_FOUND_ERROR_001"),
+                                HttpStatus.OK);
+                    }
+
+
                     Optional<Amc> optionalAmc = amcRepository.findByContractName(addUpdateAmcDto.getContractName());
                     if(optionalAmc.isPresent()){
                         log.error("AMC Contract Add: Contract Name Already Exist");
@@ -74,6 +89,9 @@ public class AmcServiceImpl implements AmcService {
                     String rowBefore = "";
 
                     Amc amc = new Amc();
+                    MultipartFile file = addUpdateAmcDto.getAmcFile();
+                    final String filePath = amcMapper.saveFile(file);
+                    amc.setAmcFile(filePath);
                     amc.setUser(user);
                     amcRepository.save(amcMapper.addUpdateAmcMapper(amc,addUpdateAmcDto));
 
@@ -120,6 +138,13 @@ public class AmcServiceImpl implements AmcService {
                 addAmcObjectValidator.validate(addUpdateAmcDto);
                 if(addUpdateAmcDto != null){
                     try{
+                        if(addUpdateAmcDto.getAmcFile() != null && !amcMapper.isPdfFile(addUpdateAmcDto.getAmcFile())){
+                            log.error("AMC Update: Accept pdf files only");
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "Accept pdf files only", "AMC_FILE_NOT_FOUND_ERROR_001"),
+                                    HttpStatus.OK);
+                        }
+
                         Optional<Amc> optionalAmc = amcRepository.findById(id);
                         if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
 
@@ -150,6 +175,14 @@ public class AmcServiceImpl implements AmcService {
                                         amc.getAmcPercentageUponPurchasePrice() + " | " + amc.getCategory()+ " | " +
                                         amc.getUser().getUsername();
 
+                                String filePath;
+                                if(addUpdateAmcDto.getAmcFile() == null){
+                                    filePath = amc.getAmcFile();
+                                }else{
+                                    MultipartFile file = addUpdateAmcDto.getAmcFile();
+                                    filePath = amcMapper.saveFile(file);
+                                }
+                                amc.setAmcFile(filePath);
                                 amcRepository.save(amcMapper.addUpdateAmcMapper(amc,addUpdateAmcDto));
 
                                 String afterName= "after version " + currentVersion;

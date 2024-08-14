@@ -19,4 +19,6 @@ public interface AuthService {
     ResponseEntity<ApiResponse<?>> newPassword(NewPasswordDto newPasswordDto);
 
     ResponseEntity<ApiResponse<?>> userInfo(HttpServletRequest request, HttpServletResponse response);
+
+    void revokeAllValidUserTokens(Integer id);
 }

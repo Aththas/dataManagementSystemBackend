@@ -1,5 +1,6 @@
 package com.mobitel.data_management.auth.entity.token;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.mobitel.data_management.auth.entity.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class Token {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonBackReference
     private User user;
 
 
