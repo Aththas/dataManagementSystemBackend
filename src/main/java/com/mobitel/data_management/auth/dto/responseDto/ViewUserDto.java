@@ -10,4 +10,5 @@ public class ViewUserDto {
     private String email;
     private String role;
     private boolean viewPermission;
+    private boolean superUser;
 }

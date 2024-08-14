@@ -133,6 +133,8 @@ public class AmcMapper {
         viewAmcDto.setCategory(amc.getCategory());
         viewAmcDto.setAmcFile(amc.getAmcFile());
         viewAmcDto.setUser(amc.getUser().getUsername());
+        viewAmcDto.setAcknowledged(amc.isAcknowledged());
+        viewAmcDto.setFirstEmailSent(amc.isFirstEmailSent());
         return viewAmcDto;
     }
 

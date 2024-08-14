@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -68,12 +69,15 @@ public class UserGroupServiceImpl implements UserGroupService {
                             userGroup.setGrpName(currentUser.getGrpName());
                             userGroup.setUserId(userGroupDto.getUserId());
                             userGroupRepository.save(userGroup);
+                            //asynchronous email sending
+                            CompletableFuture.runAsync(() ->
+                                    emailService.sendEmail(userToBeAdd.get().getEmail(), "Permission Enabled for Mobitel Data Management System",
+                                                    "Hi!\n" +
+                                                            "You have received permission to view the activities of the " + currentUser.getEmail() + " in Mobitel Data Management\n" +
+                                                            "Please click the link below to visit the web app: \n" +
+                                                            appUrl)
+                            );
 
-                            emailService.sendEmail(userToBeAdd.get().getEmail(), "Permission Enabled for Mobitel Data Management System",
-                                    "Hi!\n" +
-                                            "You have received permission to view the activities of the " + currentUser.getEmail() + " in Mobitel Data Management\n" +
-                                            "Please click the link below to visit the web app: \n" +
-                                            appUrl);
 
                             log.info("User Add to Group: User Added to My View group");
                             return new ResponseEntity<>(
@@ -127,12 +131,14 @@ public class UserGroupServiceImpl implements UserGroupService {
                                 userGroupRepository.findByUserIdAndGrpName(id, currentUser.getGrpName());
                         if(optionalUserGroup.isPresent()){
                             userGroupRepository.deleteByUserIdAndGrpName(id, currentUser.getGrpName());
-
-                            emailService.sendEmail(userToBeRemove.get().getEmail(), "Permission Disabled for Mobitel Data Management System",
-                                    "Hi!\n" +
-                                            "Your permission to view the activities of the " + currentUser.getEmail() + " in Mobitel Data Management has been restricted\n" +
-                                            "Please click the link below to visit the web app: \n" +
-                                            appUrl);
+                            //asynchronous email sending
+                            CompletableFuture.runAsync(() ->
+                                    emailService.sendEmail(userToBeRemove.get().getEmail(), "Permission Disabled for Mobitel Data Management System",
+                                            "Hi!\n" +
+                                                    "Your permission to view the activities of the " + currentUser.getEmail() + " in Mobitel Data Management has been restricted\n" +
+                                                    "Please click the link below to visit the web app: \n" +
+                                                    appUrl)
+                            );
 
                             log.info("User Remove from Group: User Removed from My View group");
                             return new ResponseEntity<>(
@@ -346,12 +352,14 @@ public class UserGroupServiceImpl implements UserGroupService {
                                     accessRequest.setGrpName(optionalGrpOwner.get().getGrpName());
                                     accessRequest.setRequesterId(user.getId());
                                     accessRequestRepository.save(accessRequest);
-
-                                    emailService.sendEmail(optionalGrpOwner.get().getEmail(), "Access Request in Mobitel Data Management System",
-                                            "Hi!\n" +
-                                                    user.getEmail() + " have requested an access to view your activities in Mobitel Data Management\n" +
-                                                    "Please click the link below to visit the web app: \n" +
-                                                    appUrl);
+                                    //asynchronous email sending
+                                    CompletableFuture.runAsync(() ->
+                                            emailService.sendEmail(optionalGrpOwner.get().getEmail(), "Access Request in Mobitel Data Management System",
+                                                    "Hi!\n" +
+                                                            user.getEmail() + " have requested an access to view your activities in Mobitel Data Management\n" +
+                                                            "Please click the link below to visit the web app: \n" +
+                                                            appUrl)
+                                    );
 
                                     log.info("Add Access Request: Access Request has been made, Wait till the Owner Confirmation");
                                     return new ResponseEntity<>(
@@ -504,12 +512,14 @@ public class UserGroupServiceImpl implements UserGroupService {
                         userGroupRepository.save(userGroup);
 
                         User reqUser = userRepository.findById(accessRequest.getRequesterId()).orElseThrow(() -> new UsernameNotFoundException("USER NOT FOUND"));
-
-                        emailService.sendEmail(reqUser.getEmail(), "Access Request Update in Mobitel Data Management System",
-                                "Hi!\n" +
-                                        "Your access request to view the activities of " + user.getEmail() + " has been accepted in Mobitel Data Management\n" +
-                                        "Please click the link below to visit the web app: \n" +
-                                        appUrl);
+                        //asynchronous email sending
+                        CompletableFuture.runAsync(() ->
+                                emailService.sendEmail(reqUser.getEmail(), "Access Request Update in Mobitel Data Management System",
+                                        "Hi!\n" +
+                                                "Your access request to view the activities of " + user.getEmail() + " has been accepted in Mobitel Data Management\n" +
+                                                "Please click the link below to visit the web app: \n" +
+                                                appUrl)
+                        );
 
                         accessRequestRepository.deleteById(id);
 
@@ -557,12 +567,14 @@ public class UserGroupServiceImpl implements UserGroupService {
                         AccessRequest accessRequest = optionalAccessRequest.get();
 
                         User reqUser = userRepository.findById(accessRequest.getRequesterId()).orElseThrow(() -> new UsernameNotFoundException("USER NOT FOUND"));
-
-                        emailService.sendEmail(reqUser.getEmail(), "Access Request Update in Mobitel Data Management System",
-                                "Hi!\n" +
-                                        "Your access request to view the activities of " + user.getEmail() + " has been rejected in Mobitel Data Management\n" +
-                                        "Please click the link below to visit the web app: \n" +
-                                        appUrl);
+                        //asynchronous email sending
+                        CompletableFuture.runAsync(() ->
+                                emailService.sendEmail(reqUser.getEmail(), "Access Request Update in Mobitel Data Management System",
+                                        "Hi!\n" +
+                                                "Your access request to view the activities of " + user.getEmail() + " has been rejected in Mobitel Data Management\n" +
+                                                "Please click the link below to visit the web app: \n" +
+                                                appUrl)
+                        );
 
                         accessRequestRepository.deleteById(id);
 

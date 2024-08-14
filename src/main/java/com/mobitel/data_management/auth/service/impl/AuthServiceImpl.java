@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -159,7 +160,8 @@ public class AuthServiceImpl implements AuthService {
                     }
                     String otp = OtpUtil.generateOtp();
                     otpStorage.storeOtp(forgotPasswordDto.getEmail(), otp);
-                    emailService.sendEmail(forgotPasswordDto.getEmail(), "Your OTP Code", "Your OTP code is: " + otp);
+                    //asynchronous email sending
+                    CompletableFuture.runAsync(() -> emailService.sendEmail(forgotPasswordDto.getEmail(), "Your OTP Code", "Your OTP code is: " + otp));
 
                     log.info("Forgot password: OTP send to email - " + forgotPasswordDto.getEmail());
                     return new ResponseEntity<>(

@@ -30,4 +30,6 @@ public interface UserRepository extends JpaRepository<User,Integer> {
     List<User> findAllByGroupNames(List<String> grpNames);
 
     Optional<User> findByGrpName(String grpName);
+
+    List<User> findBySuperUserTrue();
 }
