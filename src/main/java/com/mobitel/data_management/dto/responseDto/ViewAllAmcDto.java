@@ -22,4 +22,7 @@ public class ViewAllAmcDto {
     private String category;
     private String amcFile;
     private String user;
+    //new
+    private boolean isFirstEmailSent;
+    private boolean isAcknowledged;
 }

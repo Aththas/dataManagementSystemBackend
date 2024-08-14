@@ -49,4 +49,9 @@ public class AmcController {
     public ResponseEntity<ApiResponse<?>> deleteAmc(@RequestParam Integer id){
         return amcService.deleteMyAmc(id);
     }
+
+    @PutMapping("/acknowledge")
+    public ResponseEntity<ApiResponse<?>> acknowledge(@RequestParam Integer id){
+        return amcService.acknowledge(id);
+    }
 }

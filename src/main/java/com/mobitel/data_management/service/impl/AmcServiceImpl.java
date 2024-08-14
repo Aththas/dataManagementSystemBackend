@@ -10,6 +10,7 @@ import com.mobitel.data_management.entity.Amc;
 import com.mobitel.data_management.other.apiResponseDto.ApiResponse;
 import com.mobitel.data_management.other.csvService.AmcCsvConverter;
 import com.mobitel.data_management.other.dateUtility.DateFormatConverter;
+import com.mobitel.data_management.other.emailService.EmailService;
 import com.mobitel.data_management.other.mapper.AmcMapper;
 import com.mobitel.data_management.other.stringUtility.StringUtils;
 import com.mobitel.data_management.other.validator.ObjectValidator;
@@ -30,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +47,7 @@ public class AmcServiceImpl implements AmcService {
     private final StringUtils stringUtils;
     private final DateFormatConverter dateFormatConverter;
     private final UserGroupRepository userGroupRepository;
+    private final EmailService emailService;
 
     private User getCurrentUser(){
         final String userEmail = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
@@ -93,6 +96,8 @@ public class AmcServiceImpl implements AmcService {
                     final String filePath = amcMapper.saveFile(file);
                     amc.setAmcFile(filePath);
                     amc.setUser(user);
+                    amc.setFirstEmailSent(false);
+                    amc.setAcknowledged(false);
                     amcRepository.save(amcMapper.addUpdateAmcMapper(amc,addUpdateAmcDto));
 
                     String afterName= "after version " + currentVersion;
@@ -474,6 +479,80 @@ public class AmcServiceImpl implements AmcService {
         }else
         {
             log.error("Delete My AMC: Unauthorized Access");
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
+                    HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<?>> acknowledge(Integer id) {
+        User user = getCurrentUser();
+        if(user != null){
+            if(id != null){
+                try{
+                    Optional<Amc> optionalAmc = amcRepository.findById(id);
+                    if(optionalAmc.isPresent() && user.equals(optionalAmc.get().getUser())){
+                        Amc amc = optionalAmc.get();
+
+                        if(amc.isAcknowledged()){
+                            log.error("Acknowledge My AMC: AMC Contract Already Acknowledged");
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "AMC Contract Already Acknowledged", "AMC_ERROR_002"),
+                                    HttpStatus.OK);
+                        }
+
+                        if(!amc.isFirstEmailSent()){
+                            log.error("Acknowledge My AMC: AMC Contract's expiry date is far away");
+                            return new ResponseEntity<>(
+                                    new ApiResponse<>(false, null, "AMC Contract's expiry date is far away", "AMC_ERROR_002"),
+                                    HttpStatus.OK);
+                        }
+                        amc.setAcknowledged(true);
+                        amcRepository.save(amc);
+                        log.info("Acknowledge My AMC: AMC Contract Acknowledged - " + amc.getContractName());
+
+                        //asynchronous email sending
+                        CompletableFuture.runAsync(() -> {
+                            List<User> superUsers = userRepository.findBySuperUserTrue();
+                            for (User superUser : superUsers) {
+                                try {
+                                    emailService.sendEmail(
+                                            superUser.getEmail(),
+                                            "AMC Contract Acknowledged",
+                                            "AMC Contact " + amc.getContractName() + ", has been acknowledged by " +
+                                                    amc.getUser().getEmail()
+                                            );
+                                    log.info("Email sent to Super User: " + superUser.getEmail());
+                                } catch (Exception e) {
+                                    log.error("Failed to send email to Super User: " + superUser.getEmail(), e);
+                                }
+                            }
+                        });
+
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(true, null, "AMC Contract Acknowledged", null),
+                                HttpStatus.OK);
+                    }
+                    log.error("Acknowledge My AMC: AMC Contract Not Found");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "AMC Contract Not Found", "AMC_ERROR_002"),
+                            HttpStatus.OK);
+                }catch (Exception e){
+                    log.error("Acknowledge My AMC: " + e);
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                            HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }else{
+                log.error("Acknowledge My AMC: Null User ID");
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                        HttpStatus.BAD_REQUEST);
+            }
+        }else
+        {
+            log.error("Acknowledge My AMC: Unauthorized Access");
             return new ResponseEntity<>(
                     new ApiResponse<>(false, null, "Unauthorized Access", "AUTH_ERROR_001"),
                     HttpStatus.UNAUTHORIZED);

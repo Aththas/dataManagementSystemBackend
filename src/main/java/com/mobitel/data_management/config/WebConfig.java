@@ -20,5 +20,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/PDF-Files/po/**")
                 .addResourceLocations("file:src/main/resources/static/PDF-Files/po/")
                 .setCachePeriod(0);
+
+        registry.addResourceHandler("/PDF-Files/amc/**")
+                .addResourceLocations("file:src/main/resources/static/PDF-Files/amc/")
+                .setCachePeriod(0);
     }
 }

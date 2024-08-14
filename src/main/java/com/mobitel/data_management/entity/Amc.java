@@ -42,4 +42,7 @@ public class Amc {
     @JoinColumn(name = "user_id")
     @JsonBackReference
     private User user;
+    //new
+    private boolean isFirstEmailSent;
+    private boolean isAcknowledged;
 }

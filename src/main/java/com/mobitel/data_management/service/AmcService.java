@@ -18,4 +18,6 @@ public interface AmcService {
     ResponseEntity<ApiResponse<?>> deleteMyAmc(Integer id);
 
     ResponseEntity<ApiResponse<?>> updateAmc(Integer id, AddUpdateAmcDto addUpdateAmcDto);
+
+    ResponseEntity<ApiResponse<?>> acknowledge(Integer id);
 }

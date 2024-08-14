@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,19 +72,22 @@ public class UserServiceImpl implements UserService {
                 user.setRole(Role.valueOf(addUserDto.getRole()));
                 user.setPassword(passwordEncoder.encode(password));
                 user.setViewPermission(false);
+                user.setSuperUser(false);
 
                 User savedUser = userRepository.save(user);
                 savedUser.setGrpName("viewGrp_" + savedUser.getId());
                 userRepository.save(savedUser);
-
-                emailService.sendEmail(addUserDto.getEmail(), "Access for Mobitel Data Management System",
-                        "Hi!\n" +
-                                "We would like to invite you to connect to Mobitel Data Management System. " +
-                                "Use the default credentials below:\n" +
-                                "username: " + addUserDto.getEmail() + "\n" +
-                                "password: " + password + "\n" +
-                                "Please click the link below to visit the web app: \n" +
-                                appUrl);
+                //asynchronous email sending
+                CompletableFuture.runAsync(() ->
+                        emailService.sendEmail(addUserDto.getEmail(), "Access for Mobitel Data Management System",
+                                "Hi!\n" +
+                                        "We would like to invite you to connect to Mobitel Data Management System. " +
+                                        "Use the default credentials below:\n" +
+                                        "username: " + addUserDto.getEmail() + "\n" +
+                                        "password: " + password + "\n" +
+                                        "Please click the link below to visit the web app: \n" +
+                                        appUrl)
+                );
 
                 log.info("Add User: New User Added - " + addUserDto.getEmail());
                 return new ResponseEntity<>(
@@ -247,11 +251,14 @@ public class UserServiceImpl implements UserService {
 
                     authService.revokeAllValidUserTokens(id);//make the logged-in users session expired
 
-                    emailService.sendEmail(user.getEmail().substring(0,user.getEmail().length()-4), "Account Disabled for Mobitel Data Management System",
-                            """
-                                    Hi!
-                                     Your Mobitel Data Management Account has been temporarily disabled due to security reasons\s
-                                     Contact your admin and get back your account""");
+                    //asynchronous email sending
+                    CompletableFuture.runAsync(() ->
+                            emailService.sendEmail(user.getEmail().substring(0,user.getEmail().length()-4), "Account Disabled for Mobitel Data Management System",
+                                    """
+                                            Hi!
+                                             Your Mobitel Data Management Account has been temporarily disabled due to security reasons\s
+                                             Contact your admin and get back your account""")
+                    );
 
                     log.info("Disable User: Disabled " + user.getEmail().substring(0,user.getEmail().length()-4));
                     return new ResponseEntity<>(
@@ -290,13 +297,16 @@ public class UserServiceImpl implements UserService {
                         user.setEmail(user.getEmail().substring(0,user.getEmail().length()-4));
                         userRepository.save(user);
 
-                        emailService.sendEmail(user.getEmail(), "Account Enabled for Mobitel Data Management System",
-                                """
-                                        Hi!
-                                        Your Mobitel Data Management Account has been enabled successfully\s
-                                         """ +
-                                        "Please click the link below to visit the web app: \n" +
-                                        appUrl);
+                        //asynchronous email sending
+                        CompletableFuture.runAsync(() ->
+                                emailService.sendEmail(user.getEmail(), "Account Enabled for Mobitel Data Management System",
+                                        """
+                                                Hi!
+                                                Your Mobitel Data Management Account has been enabled successfully\s
+                                                 """ +
+                                                "Please click the link below to visit the web app: \n" +
+                                                appUrl)
+                        );
 
                         log.info("Enable User: Enabled " + user.getEmail());
                         return new ResponseEntity<>(
@@ -338,13 +348,16 @@ public class UserServiceImpl implements UserService {
                         user.setViewPermission(true);
                         userRepository.save(user);
 
-                        emailService.sendEmail(user.getEmail(), "Permission Enabled for Mobitel Data Management System",
-                                """
-                                        Hi!
-                                        You have received permission to view excel sheets in Mobitel Data Management provided by admin\s
-                                         """ +
-                                        "Please click the link below to visit the web app: \n" +
-                                        appUrl);
+                        //asynchronous email sending
+                        CompletableFuture.runAsync(() ->
+                                emailService.sendEmail(user.getEmail(), "Permission Enabled for Mobitel Data Management System",
+                                        """
+                                                Hi!
+                                                You have received permission to view excel sheets in Mobitel Data Management provided by admin\s
+                                                 """ +
+                                                "Please click the link below to visit the web app: \n" +
+                                                appUrl)
+                        );
 
                         log.info("Enable Permission: CSV View Access Provided " + user.getEmail());
                         return new ResponseEntity<>(
@@ -386,17 +399,70 @@ public class UserServiceImpl implements UserService {
                         user.setViewPermission(false);
                         userRepository.save(user);
 
-                        emailService.sendEmail(user.getEmail(), "Permission Disabled for Mobitel Data Management System",
-                                """
-                                        Hi!
-                                        Your view excel sheets permission has been restricted in Mobitel Data Management by admin\s
-                                         """ +
-                                        "Please click the link below to visit the web app: \n" +
-                                        appUrl);
+                        //asynchronous email sending
+                        CompletableFuture.runAsync(() ->
+                                emailService.sendEmail(user.getEmail(), "Permission Disabled for Mobitel Data Management System",
+                                        """
+                                                Hi!
+                                                Your view excel sheets permission has been restricted in Mobitel Data Management by admin\s
+                                                 """ +
+                                                "Please click the link below to visit the web app: \n" +
+                                                appUrl)
+                        );
 
-                        log.info("Enable Permission: CSV View Access Disabled " + user.getEmail());
+                        log.info("Disable Permission: CSV View Access Disabled " + user.getEmail());
                         return new ResponseEntity<>(
                                 new ApiResponse<>(true, null, "CSV View Access Disabled from " + user.getEmail(), null),
+                                HttpStatus.OK);
+                    }
+                    log.warn("Disable Permission: User Already Disabled");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "User already Disabled", "USER_ERROR_006"),
+                            HttpStatus.OK);
+                }
+
+                log.error("Disable Permission: User Not Found");
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "User Not Found", "USER_ERROR_002"),
+                        HttpStatus.OK);
+            }catch (Exception e){
+                log.error("Disable Permission: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("Disable Permission: Null User ID");
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<?>> enableSuperUser(Integer id) {
+        if(id != null){
+            try{
+                Optional<User> optionalUser = userRepository.findById(id);
+                if(optionalUser.isPresent() && !optionalUser.get().getRole().equals(Role.ADMIN)){
+                    User user = optionalUser.get();
+                    if(!user.isSuperUser()){
+                        user.setSuperUser(true);
+                        userRepository.save(user);
+                        //asynchronous email sending
+                        CompletableFuture.runAsync(() ->
+                                emailService.sendEmail(user.getEmail(), "Permission Enabled for Mobitel Data Management System",
+                                        """
+                                                Hi!
+                                                You have received super user role in Mobitel Data Management provided by admin\s
+                                                 """ +
+                                                "Please click the link below to visit the web app: \n" +
+                                                appUrl)
+                        );
+
+                        log.info("Enable Permission: super user role Provided " + user.getEmail());
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(true, null, "super user role Provided to " + user.getEmail(), null),
                                 HttpStatus.OK);
                     }
                     log.warn("Enable Permission: User Already Has Access");
@@ -417,6 +483,56 @@ public class UserServiceImpl implements UserService {
             }
         }else{
             log.error("Enable Permission: Null User ID");
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
+                    HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<?>> disableSuperUser(Integer id) {
+        if(id != null){
+            try{
+                Optional<User> optionalUser = userRepository.findById(id);
+                if(optionalUser.isPresent() && !optionalUser.get().getRole().equals(Role.ADMIN)){
+                    User user = optionalUser.get();
+                    if(user.isSuperUser()){
+                        user.setSuperUser(false);
+                        userRepository.save(user);
+                        //asynchronous email sending
+                        CompletableFuture.runAsync(() ->
+                                emailService.sendEmail(user.getEmail(), "Permission Disabled for Mobitel Data Management System",
+                                        """
+                                                Hi!
+                                                Your super user role has been restricted in Mobitel Data Management by admin\s
+                                                 """ +
+                                                "Please click the link below to visit the web app: \n" +
+                                                appUrl)
+                        );
+
+                        log.info("Disable Permission: super user role Disabled " + user.getEmail());
+                        return new ResponseEntity<>(
+                                new ApiResponse<>(true, null, "super user role Disabled from " + user.getEmail(), null),
+                                HttpStatus.OK);
+                    }
+                    log.warn("Disable Permission: User Already Disabled");
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, null, "User already Disabled", "USER_ERROR_006"),
+                            HttpStatus.OK);
+                }
+
+                log.error("Disable Permission: User Not Found");
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "User Not Found", "USER_ERROR_002"),
+                        HttpStatus.OK);
+            }catch (Exception e){
+                log.error("Disable Permission: " + e);
+                return new ResponseEntity<>(
+                        new ApiResponse<>(false, null, "Server Error", "SERVER_ERROR_500"),
+                        HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }else{
+            log.error("Disable Permission: Null User ID");
             return new ResponseEntity<>(
                     new ApiResponse<>(false, null, "Null User ID", "NULL_ERROR_100"),
                     HttpStatus.BAD_REQUEST);

@@ -30,6 +30,7 @@ public class User implements UserDetails {
     private String password;
     private String grpName;
     private boolean viewPermission;
+    private boolean superUser;
 
     @Enumerated(EnumType.STRING)
     private Role role;

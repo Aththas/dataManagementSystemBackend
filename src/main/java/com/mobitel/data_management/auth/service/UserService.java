@@ -21,4 +21,8 @@ public interface UserService {
     ResponseEntity<ApiResponse<?>> enableCsvPermission(Integer id);
 
     ResponseEntity<ApiResponse<?>> disableCsvPermission(Integer id);
+
+    ResponseEntity<ApiResponse<?>> enableSuperUser(Integer id);
+
+    ResponseEntity<ApiResponse<?>> disableSuperUser(Integer id);
 }

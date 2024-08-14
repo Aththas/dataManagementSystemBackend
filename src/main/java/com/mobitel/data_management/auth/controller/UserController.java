@@ -52,4 +52,14 @@ public class UserController {
     public ResponseEntity<ApiResponse<?>> disableCsvPermission(@RequestParam Integer id) {
         return userService.disableCsvPermission(id);
     }
+
+    @PutMapping("/enableSuperUser")
+    public ResponseEntity<ApiResponse<?>> enableSuperUser(@RequestParam Integer id) {
+        return userService.enableSuperUser(id);
+    }
+
+    @PutMapping("/disableSuperUser")
+    public ResponseEntity<ApiResponse<?>> disableSuperUser(@RequestParam Integer id) {
+        return userService.disableSuperUser(id);
+    }
 }
