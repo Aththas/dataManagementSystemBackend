@@ -551,7 +551,7 @@ public class AmcServiceImpl implements AmcService {
                     emailService.sendEmail(
                             superUser.getEmail(),
                             "AMC Contract Acknowledged",
-                            "AMC Contact " + amc.getContractName() + ", has been acknowledged by " +
+                            "AMC Contract " + amc.getContractName() + ", has been acknowledged by " +
                                     amc.getUser().getEmail()
                     );
                     log.info("Email sent to Super User: " + superUser.getEmail());

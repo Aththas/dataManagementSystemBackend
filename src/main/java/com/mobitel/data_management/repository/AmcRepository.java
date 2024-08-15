@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,6 @@ public interface AmcRepository extends JpaRepository<Amc,Integer> {
     @Query("SELECT a FROM Amc a WHERE a.user IN :users")
     List<Amc> findAllByUser(List<User> users);
 
-    List<Amc> findAllByEndDateBetweenAndIsAcknowledgedIsFalse(LocalDate startDate, LocalDate endDate);
+    List<Amc> findAllByEndDateBetweenAndIsAcknowledgedIsFalse(Date startDate, Date endDate);
 
 }

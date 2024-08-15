@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -33,13 +34,16 @@ public class EmailService {
         mailSender.send(message);
     }
 
-    @Scheduled(cron = "0 0 8 * * MON")// Every Monday at 8 AM
+    @Scheduled(cron = "0 43 20 * * THU")// Every Monday at 8.30 PM
     public void scheduledEmail(){
 
         LocalDate now = LocalDate.now();
-        LocalDate threeMonthsLater = now.plus(3, ChronoUnit.MONTHS);
+        LocalDate threeMonthsLater = now.plusMonths(3);
 
-        List<Amc> amcExpiringSoonList = amcRepository.findAllByEndDateBetweenAndIsAcknowledgedIsFalse(now, threeMonthsLater);
+        Date sqlNow = Date.valueOf(now);
+        Date sqlThreeMonthsLater = Date.valueOf(threeMonthsLater);
+
+        List<Amc> amcExpiringSoonList = amcRepository.findAllByEndDateBetweenAndIsAcknowledgedIsFalse(sqlNow, sqlThreeMonthsLater);
 
         for (Amc amc : amcExpiringSoonList) {
             if (!amc.isFirstEmailSent()) {
@@ -62,7 +66,7 @@ public class EmailService {
                     sendEmail(
                             superUser.getEmail(),
                             "AMC Expiry Reminder Notification",
-                            "Reminder: The AMC Contact " + amc.getContractName() + ", is still pending acknowledgment."
+                            "Reminder: The AMC Contract " + amc.getContractName() + ", is still pending acknowledgment."
                     );
                     log.info("Email sent to Super User: " + superUser.getEmail());
                 } catch (Exception e) {
@@ -83,7 +87,7 @@ public class EmailService {
                     sendEmail(
                             superUser.getEmail(),
                             "AMC Expiry Notification",
-                            "AMC Contact " + amc.getContractName() + ", is expiring soon. Please acknowledge."
+                            "AMC Contract " + amc.getContractName() + ", is expiring soon. Please acknowledge."
                     );
                     log.info("Email sent to Super User: " + superUser.getEmail());
                 } catch (Exception e) {
